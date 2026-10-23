@@ -1,0 +1,14 @@
+{
+  "name": "Rich Presence Studio",
+  "description": "Кастомные карточки и перенос профилей с ПК. Revenge Classic. Без музыки.",
+  "authors": [
+    {
+      "name": "Eltan"
+    }
+  ],
+  "main": "index.js",
+  "hash": "eb5e9685a6b9c992fe17a901f9120d248a32c17053f9080018f22e8a3927df3b",
+  "vendetta": {
+    "icon": "ic_activity_status_24px"
+  }
+}
