@@ -1,4 +1,4 @@
-export const BUILD = "0.2.3";
+export const BUILD = "0.2.4";
 const components = new Set<string>();
 let hooks = 0, matches = 0;
 export function observeComponent(element: any) {

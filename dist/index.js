@@ -292,7 +292,7 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.3";
+  var BUILD = "0.2.4";
   var components = /* @__PURE__ */ new Set();
   var hooks = 0;
   var matches = 0;
@@ -1784,10 +1784,11 @@
           accessibilityRole: "button",
           accessibilityLabel: "Rich Presence Studio \u2014 \u043D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443\u0441",
           onPress: () => navigation.push("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings2 }),
-          style: { minWidth: 56, minHeight: 60, flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 }
+          hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
+          style: { minWidth: 56, height: 44, flex: 1, alignSelf: "flex-start", alignItems: "center", justifyContent: "flex-start", paddingHorizontal: 6 }
         },
-        React3.createElement(RN3.Text, { style: { color: "#aeb8ff", fontSize: 25 } }, "\u2726"),
-        React3.createElement(RN3.Text, { style: { color: "#eeeeee", fontSize: 12, marginTop: 4 } }, "RPS")
+        React3.createElement(RN3.Text, { style: { color: "#aeb8ff", fontSize: 24, lineHeight: 24, height: 24, includeFontPadding: false, textAlign: "center" } }, "\u2726"),
+        React3.createElement(RN3.Text, { style: { color: "#eeeeee", fontSize: 12, lineHeight: 16, fontWeight: "600", includeFontPadding: false, marginTop: 4 } }, "RPS")
       );
     }
     function inject(_args, element) {

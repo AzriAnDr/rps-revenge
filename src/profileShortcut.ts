@@ -42,9 +42,10 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
         return React.createElement(RN.Pressable, {
             accessibilityRole: "button", accessibilityLabel: "Rich Presence Studio — настроить статус",
             onPress: () => navigation.push("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings }),
-            style: { minWidth: 56, minHeight: 60, flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 }
-        }, React.createElement(RN.Text, { style: { color: "#aeb8ff", fontSize: 25 } }, "✦"),
-        React.createElement(RN.Text, { style: { color: "#eeeeee", fontSize: 12, marginTop: 4 } }, "RPS"));
+            hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
+            style: { minWidth: 56, height: 44, flex: 1, alignSelf: "flex-start", alignItems: "center", justifyContent: "flex-start", paddingHorizontal: 6 }
+        }, React.createElement(RN.Text, { style: { color: "#aeb8ff", fontSize: 24, lineHeight: 24, height: 24, includeFontPadding: false, textAlign: "center" } }, "✦"),
+        React.createElement(RN.Text, { style: { color: "#eeeeee", fontSize: 12, lineHeight: 16, fontWeight: "600", includeFontPadding: false, marginTop: 4 } }, "RPS"));
     }
     function inject(_args: unknown[], element: any) {
         if (!active || editing) return;
