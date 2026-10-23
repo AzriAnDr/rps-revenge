@@ -1704,19 +1704,103 @@
     };
   }
 
+  // src/profileShortcut.ts
+  var KEY = "rps-profile-shortcut";
+  var groups = [/* @__PURE__ */ new Set(["quests", "\u0437\u0430\u0434\u0430\u043D\u0438\u044F"]), /* @__PURE__ */ new Set(["shop", "\u043C\u0430\u0433\u0430\u0437\u0438\u043D"]), /* @__PURE__ */ new Set(["settings", "\u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438"])];
+  function describe(root) {
+    const labels = /* @__PURE__ */ new Set();
+    let clickable = false, remaining = 40;
+    function visit(value, depth) {
+      if (--remaining < 0 || depth > 5 || value == null) return;
+      if (typeof value === "string") {
+        labels.add(value.trim().toLowerCase());
+        return;
+      }
+      if (Array.isArray(value)) {
+        value.forEach((v) => visit(v, depth + 1));
+        return;
+      }
+      const p = value.props;
+      if (!p) return;
+      clickable || (clickable = typeof p.onPress === "function");
+      for (const name of ["label", "text", "title", "accessibilityLabel", "children"]) visit(p[name], depth + 1);
+    }
+    visit(root, 0);
+    return { labels, clickable };
+  }
+  function isProfileActionRow(element) {
+    const children = element?.props?.children;
+    if (!Array.isArray(children) || children.length !== 3 || children.some((c) => c?.key === KEY)) return false;
+    const descriptions = children.map(describe);
+    return descriptions.every((d) => d.clickable) && groups.every((group) => descriptions.some((d) => [...d.labels].some((label) => group.has(label))));
+  }
+  function createProfileShortcut(api, renderSettings2) {
+    const { React: React3, ReactNative: RN3, NavigationNative } = api.metro.common;
+    let active = false, editing = false;
+    const unpatch = [];
+    function Shortcut() {
+      const navigation = NavigationNative.useNavigation();
+      return React3.createElement(
+        RN3.Pressable,
+        {
+          accessibilityRole: "button",
+          accessibilityLabel: "Rich Presence Studio \u2014 \u043D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443\u0441",
+          onPress: () => navigation.push("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings2 }),
+          style: { minWidth: 56, minHeight: 60, flex: 1, alignItems: "center", justifyContent: "center", paddingHorizontal: 6 }
+        },
+        React3.createElement(RN3.Text, { style: { color: "#aeb8ff", fontSize: 25 } }, "\u2726"),
+        React3.createElement(RN3.Text, { style: { color: "#eeeeee", fontSize: 12, marginTop: 4 } }, "RPS")
+      );
+    }
+    function inject(_args, element) {
+      if (!active || editing) return;
+      try {
+        if (!isProfileActionRow(element)) return;
+        editing = true;
+        return React3.cloneElement(element, {}, ...element.props.children, React3.createElement(Shortcut, { key: KEY }));
+      } catch (e) {
+        api.logger?.error?.("RPS profile shortcut", e);
+      } finally {
+        editing = false;
+      }
+    }
+    return {
+      start() {
+        if (active || !api.patcher?.after || !NavigationNative?.useNavigation) return;
+        active = true;
+        try {
+          const jsx = api.metro.findByProps("jsx", "jsxs");
+          for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
+          if (typeof React3.createElement === "function") unpatch.push(api.patcher.after("createElement", React3, inject));
+        } catch (e) {
+          this.stop();
+          api.logger?.error?.("RPS profile shortcut unavailable", e);
+        }
+      },
+      stop() {
+        active = false;
+        for (const undo of unpatch.splice(0).reverse()) undo();
+      }
+    };
+  }
+
   // src/index.ts
   var runtime = createRuntime(vendetta);
   var sync = createMobileSync(vendetta, runtime.controller);
+  var renderSettings = () => vendetta.metro.common.React.createElement(Settings_default, { controller: runtime.controller, sync });
+  var shortcut = createProfileShortcut(vendetta, renderSettings);
   var index_default = {
     onLoad: () => {
       runtime.start();
       sync.start();
+      shortcut.start();
     },
     onUnload: () => {
+      shortcut.stop();
       sync.stop();
       runtime.stop();
     },
-    settings: () => vendetta.metro.common.React.createElement(Settings_default, { controller: runtime.controller, sync })
+    settings: renderSettings
   };
   return __toCommonJS(index_exports);
 })();
