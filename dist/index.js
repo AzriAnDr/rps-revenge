@@ -291,6 +291,26 @@
     }), sync2.enabled() && button("\u0421\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0441\u0435\u0439\u0447\u0430\u0441", () => sync2.syncNow()), sync2.enabled() && button("\u0412\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044E", () => sync2.disconnect()), /* @__PURE__ */ React.createElement(RN.Text, { accessibilityLiveRegion: "polite", style: { color: error ? "#ffacb5" : "#b6bbce" } }, error || sync2.status()));
   }
 
+  // src/diagnostics.ts
+  var BUILD = "0.2.2-diagnostics";
+  var components = /* @__PURE__ */ new Set();
+  var hooks = 0;
+  var matches = 0;
+  function observeComponent(element) {
+    const type = element?.type;
+    const name = type?.displayName || type?.name || type?.render?.name;
+    if (typeof name === "string" && /profile|quest|shop|setting|actionbar|floating/i.test(name) && components.size < 80) components.add(name.slice(0, 100));
+  }
+  function setHookCount(value) {
+    hooks = value;
+  }
+  function recordMatch() {
+    matches++;
+  }
+  function diagnosticReport() {
+    return JSON.stringify({ build: BUILD, hooks, matches, components: [...components] }, null, 2);
+  }
+
   // src/Settings.tsx
   var { React: React2, ReactNative: RN2 } = vendetta.metro.common;
   var { ScrollView, Text, TextInput, Pressable, Switch, View, Alert } = RN2;
@@ -397,7 +417,10 @@
       setBaseline(JSON.stringify(draft));
     }
     const field = (key, label, maxLength = 128, url = false, placeholder = "") => /* @__PURE__ */ React2.createElement(Field, { label, value: draft[key], onChange: (value) => patch(key, value), maxLength, url, placeholder });
-    return /* @__PURE__ */ React2.createElement(ScrollView, { style: { backgroundColor: colors.background }, contentContainerStyle: { padding: 18, paddingBottom: 60 }, keyboardShouldPersistTaps: "handled" }, /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "Rich Presence Studio"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u041F\u0440\u043E\u0444\u0438\u043B\u0438 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435. \u041C\u043E\u0436\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044E \u043F\u043E Wi-Fi \u0438\u043B\u0438 \u043F\u0435\u0440\u0435\u043D\u043E\u0441\u0438\u0442\u044C JSON \u0432\u0440\u0443\u0447\u043D\u0443\u044E."), sync2 && /* @__PURE__ */ React2.createElement(SyncPanel, { sync: sync2 }), /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: { color: snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, snapshot.message), !!error && /* @__PURE__ */ React2.createElement(Text, { accessibilityRole: "alert", accessibilityLiveRegion: "assertive", selectable: true, style: { color: colors.error, marginBottom: 12 } }, error), !!notice && /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: styles.hint }, notice), !snapshot.sharingEnabled && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041F\u043E\u043A\u0430\u0437 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438 \u0432 Discord \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438\u043B\u0438 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438\u0442\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043E\u043D\u0444\u0438\u0434\u0435\u043D\u0446\u0438\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u0438 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438."), snapshot.conflict && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u0430 \u0434\u0440\u0443\u0433\u0430\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0430\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C. \u041E\u0442\u043A\u043B\u044E\u0447\u0438 \u0435\u0451, \u0435\u0441\u043B\u0438 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u0443\u044E\u0442."), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438"), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, snapshot.profiles.map((profile) => /* @__PURE__ */ React2.createElement(
+    return /* @__PURE__ */ React2.createElement(ScrollView, { style: { backgroundColor: colors.background }, contentContainerStyle: { padding: 18, paddingBottom: 60 }, keyboardShouldPersistTaps: "handled" }, /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "Rich Presence Studio"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0421\u0431\u043E\u0440\u043A\u0430 ", BUILD), /* @__PURE__ */ React2.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 \u043A\u043D\u043E\u043F\u043A\u0438", onPress: () => void run(() => {
+      vendetta.metro.common.clipboard.setString(diagnosticReport());
+      setNotice("\u0414\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430. \u0412 \u043D\u0435\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u043E\u0432 \u0438 \u0432\u0435\u0440\u0441\u0438\u044F; \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439 \u0438 \u043A\u043E\u0434\u043E\u0432 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442.");
+    }) }), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u041F\u0440\u043E\u0444\u0438\u043B\u0438 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435. \u041C\u043E\u0436\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044E \u043F\u043E Wi-Fi \u0438\u043B\u0438 \u043F\u0435\u0440\u0435\u043D\u043E\u0441\u0438\u0442\u044C JSON \u0432\u0440\u0443\u0447\u043D\u0443\u044E."), sync2 && /* @__PURE__ */ React2.createElement(SyncPanel, { sync: sync2 }), /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: { color: snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, snapshot.message), !!error && /* @__PURE__ */ React2.createElement(Text, { accessibilityRole: "alert", accessibilityLiveRegion: "assertive", selectable: true, style: { color: colors.error, marginBottom: 12 } }, error), !!notice && /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: styles.hint }, notice), !snapshot.sharingEnabled && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041F\u043E\u043A\u0430\u0437 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438 \u0432 Discord \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438\u043B\u0438 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438\u0442\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043E\u043D\u0444\u0438\u0434\u0435\u043D\u0446\u0438\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u0438 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438."), snapshot.conflict && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u0430 \u0434\u0440\u0443\u0433\u0430\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0430\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C. \u041E\u0442\u043A\u043B\u044E\u0447\u0438 \u0435\u0451, \u0435\u0441\u043B\u0438 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u0443\u044E\u0442."), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438"), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, snapshot.profiles.map((profile) => /* @__PURE__ */ React2.createElement(
       Button,
       {
         key: profile.id,
@@ -1623,18 +1646,26 @@
     async function request(config, value) {
       const pair = parsePairing(config.code), endpoint = `http://${pair.address}:38474`;
       const abort = new AbortController(), timeout = setTimeout(() => abort.abort(), 6e3);
+      let stage = "\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A \u041F\u041A";
       try {
         const challengeResponse = await fetcher(endpoint + "/challenge", { signal: abort.signal, redirect: "error", cache: "no-store" });
-        if (!challengeResponse.ok) throw new Error("\u041F\u041A \u043D\u0435 \u0433\u043E\u0442\u043E\u0432 \u043A \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438. \u041F\u0440\u043E\u0432\u0435\u0440\u044C Discord \u0438 \u0441\u0435\u0442\u044C.");
+        if (!challengeResponse.ok) throw new Error(`\u041F\u041A \u043E\u0442\u0432\u0435\u0442\u0438\u043B HTTP ${challengeResponse.status}. \u041F\u0440\u043E\u0432\u0435\u0440\u044C Discord \u0438 \u0441\u0435\u0442\u044C.`);
+        stage = "\u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043A\u043E\u0434\u0430 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F";
         const challenge = await challengeResponse.json();
         if (challenge.prefix !== pair.prefix || typeof challenge.nonce !== "string" || !/^[0-9a-f]{48}$/.test(challenge.nonce)) throw new Error("\u041A\u043E\u0434 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u0438\u0437\u043C\u0435\u043D\u0438\u043B\u0441\u044F. \u0421\u043A\u043E\u043F\u0438\u0440\u0443\u0439 \u043D\u043E\u0432\u044B\u0439 \u043A\u043E\u0434 \u0441 \u041F\u041A.");
-        const response = await fetcher(endpoint + "/sync", { method: "POST", signal: abort.signal, redirect: "error", headers: { "Content-Type": "application/json" }, body: JSON.stringify(seal({ ...value, ownerId: config.owner }, pair.key, challenge.nonce)) });
-        if (!response.ok) throw new Error("\u041F\u041A \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u043A\u043E\u0434 \u0438 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0435 \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 Discord.");
+        stage = "\u0448\u0438\u0444\u0440\u043E\u0432\u0430\u043D\u0438\u0435 \u0437\u0430\u043F\u0440\u043E\u0441\u0430";
+        const body = JSON.stringify(seal({ ...value, ownerId: config.owner }, pair.key, challenge.nonce));
+        stage = "\u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0430 \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439 \u043D\u0430 \u041F\u041A";
+        const response = await fetcher(endpoint + "/sync", { method: "POST", signal: abort.signal, redirect: "error", headers: { "Content-Type": "application/json" }, body });
+        if (!response.ok) throw new Error(`\u041F\u041A \u043E\u0442\u043A\u043B\u043E\u043D\u0438\u043B \u0437\u0430\u043F\u0440\u043E\u0441 (HTTP ${response.status}). \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u043A\u043E\u0434 \u0438 \u0441\u043E\u0432\u043F\u0430\u0434\u0435\u043D\u0438\u0435 \u0430\u043A\u043A\u0430\u0443\u043D\u0442\u0430 Discord.`);
+        stage = "\u0440\u0430\u0441\u0448\u0438\u0444\u0440\u043E\u0432\u043A\u0430 \u043E\u0442\u0432\u0435\u0442\u0430 \u041F\u041A";
         const raw = await response.text();
         if (raw.length > 2097152) throw new Error("\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u041F\u041A.");
         const result = open(JSON.parse(raw), pair.key);
         if (result.requestNonce !== challenge.nonce) throw new Error("\u041E\u0442\u0432\u0435\u0442 \u043E\u0442\u043D\u043E\u0441\u0438\u0442\u0441\u044F \u043A \u0434\u0440\u0443\u0433\u043E\u043C\u0443 \u0437\u0430\u043F\u0440\u043E\u0441\u0443.");
         return result;
+      } catch (e) {
+        throw new Error(`${stage}: ${e instanceof Error ? e.message : String(e)}`);
       } finally {
         clearTimeout(timeout);
       }
@@ -1755,7 +1786,9 @@
     function inject(_args, element) {
       if (!active || editing) return;
       try {
+        observeComponent(element);
         if (!isProfileActionRow(element)) return;
+        recordMatch();
         editing = true;
         return React3.cloneElement(element, {}, ...element.props.children, React3.createElement(Shortcut, { key: KEY }));
       } catch (e) {
@@ -1772,6 +1805,7 @@
           const jsx = api.metro.findByProps("jsx", "jsxs");
           for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
           if (typeof React3.createElement === "function") unpatch.push(api.patcher.after("createElement", React3, inject));
+          setHookCount(unpatch.length);
         } catch (e) {
           this.stop();
           api.logger?.error?.("RPS profile shortcut unavailable", e);
@@ -1780,6 +1814,7 @@
       stop() {
         active = false;
         for (const undo of unpatch.splice(0).reverse()) undo();
+        setHookCount(0);
       }
     };
   }

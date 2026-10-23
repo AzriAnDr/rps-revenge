@@ -1,3 +1,4 @@
+import { observeComponent, recordMatch, setHookCount } from "./diagnostics";
 const KEY = "rps-profile-shortcut";
 const groups = [new Set(["quests", "задания"]), new Set(["shop", "магазин"]), new Set(["settings", "настройки"])];
 
@@ -41,7 +42,9 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
     function inject(_args: unknown[], element: any) {
         if (!active || editing) return;
         try {
+            observeComponent(element);
             if (!isProfileActionRow(element)) return;
+            recordMatch();
             editing = true;
             return React.cloneElement(element, {}, ...element.props.children, React.createElement(Shortcut, { key: KEY }));
         } catch (e) { api.logger?.error?.("RPS profile shortcut", e); }
@@ -55,8 +58,9 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
                 const jsx = api.metro.findByProps("jsx", "jsxs");
                 for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
                 if (typeof React.createElement === "function") unpatch.push(api.patcher.after("createElement", React, inject));
+                setHookCount(unpatch.length);
             } catch (e) { this.stop(); api.logger?.error?.("RPS profile shortcut unavailable", e); }
         },
-        stop() { active = false; for (const undo of unpatch.splice(0).reverse()) undo(); }
+        stop() { active = false; for (const undo of unpatch.splice(0).reverse()) undo(); setHookCount(0); }
     };
 }

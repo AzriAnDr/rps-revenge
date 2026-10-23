@@ -13,19 +13,26 @@ export function createMobileSync(api: any, studio: StudioController, fetcher = g
     async function request(config: MobileLink, value: object) {
         const pair = parsePairing(config.code), endpoint = `http://${pair.address}:38474`;
         const abort = new AbortController(), timeout = setTimeout(() => abort.abort(), 6000);
+        let stage = "подключение к ПК";
         try {
             const challengeResponse = await fetcher(endpoint + "/challenge", { signal: abort.signal, redirect: "error", cache: "no-store" });
-            if (!challengeResponse.ok) throw new Error("ПК не готов к синхронизации. Проверь Discord и сеть.");
+            if (!challengeResponse.ok) throw new Error(`ПК ответил HTTP ${challengeResponse.status}. Проверь Discord и сеть.`);
+            stage = "проверка кода подключения";
             const challenge = await challengeResponse.json();
             if (challenge.prefix !== pair.prefix || typeof challenge.nonce !== "string" || !/^[0-9a-f]{48}$/.test(challenge.nonce)) throw new Error("Код подключения изменился. Скопируй новый код с ПК.");
-            const response = await fetcher(endpoint + "/sync", { method: "POST", signal: abort.signal, redirect: "error", headers: { "Content-Type": "application/json" }, body: JSON.stringify(seal({ ...value, ownerId: config.owner }, pair.key, challenge.nonce)) });
-            if (!response.ok) throw new Error("ПК отклонил подключение. Проверь код и совпадение аккаунта Discord.");
+            stage = "шифрование запроса";
+            const body = JSON.stringify(seal({ ...value, ownerId: config.owner }, pair.key, challenge.nonce));
+            stage = "отправка профилей на ПК";
+            const response = await fetcher(endpoint + "/sync", { method: "POST", signal: abort.signal, redirect: "error", headers: { "Content-Type": "application/json" }, body });
+            if (!response.ok) throw new Error(`ПК отклонил запрос (HTTP ${response.status}). Проверь код и совпадение аккаунта Discord.`);
+            stage = "расшифровка ответа ПК";
             const raw = await response.text();
             if (raw.length > 2097152) throw new Error("Слишком большой ответ ПК.");
             const result = open(JSON.parse(raw), pair.key);
             if (result.requestNonce !== challenge.nonce) throw new Error("Ответ относится к другому запросу.");
             return result;
-        } finally { clearTimeout(timeout); }
+        } catch (e) { throw new Error(`${stage}: ${e instanceof Error ? e.message : String(e)}`); }
+        finally { clearTimeout(timeout); }
     }
     async function tick() {
         const config = stored(); if (busy || !config?.enabled) return;
