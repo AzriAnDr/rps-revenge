@@ -11,6 +11,17 @@ test("matches the three profile actions, not arbitrary settings or text", () => 
     assert.equal(isProfileActionRow(textOnly), false);
     assert.equal(isProfileActionRow({ props: { children: null } }), false);
 });
+test("matches observed Discord icons with hidden labels and a separate shop component", () => {
+    function QuestsIcon() {} function SettingsIcon() {} function CollectiblesShopEntryButton() {}
+    const observed = element("View", {}, null, [
+        element("Button", { onPress() {}, icon: QuestsIcon }),
+        element(CollectiblesShopEntryButton, {}),
+        element("Button", { onPress() {} }, element(SettingsIcon, {}))
+    ]);
+    assert.ok(isProfileActionRow(observed));
+    observed.props.children[1][1] = element("OtherButton", {});
+    assert.equal(isProfileActionRow(observed), false);
+});
 test("shortcut preserves original actions, opens settings and unpatches on unload", () => {
     const hooks: any[] = [], pushes: any[] = []; let removed = 0;
     const React = { createElement: element, cloneElement: (e: any, p: any, ...children: any[]) => element(e.type, { ...e.props, ...p }, ...children) };

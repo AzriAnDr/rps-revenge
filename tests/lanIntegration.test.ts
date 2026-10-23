@@ -28,7 +28,9 @@ test("real encrypted mobile/desktop LAN sync preserves both edits and never auto
         assert.equal(url.port, "38474");
         if (init?.body) wireBodies.push(String(init.body));
         // Only the transport address changes. Challenges, encryption and HTTP are real.
-        return fetch(`http://127.0.0.1:${port}${url.pathname}`, init);
+        // Model React Native/whatwg-fetch's cache option URL rewriting.
+        if (init?.cache === "no-store" || init?.cache === "no-cache") url.searchParams.set("_", "123");
+        return fetch(`http://127.0.0.1:${port}${url.pathname}${url.search}`, init);
     };
     const sync = createMobileSync(api, runtime.controller, fetcher);
     try {

@@ -292,7 +292,7 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.2-diagnostics";
+  var BUILD = "0.2.3";
   var components = /* @__PURE__ */ new Set();
   var hooks = 0;
   var matches = 0;
@@ -1648,7 +1648,7 @@
       const abort = new AbortController(), timeout = setTimeout(() => abort.abort(), 6e3);
       let stage = "\u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u0435 \u043A \u041F\u041A";
       try {
-        const challengeResponse = await fetcher(endpoint + "/challenge", { signal: abort.signal, redirect: "error", cache: "no-store" });
+        const challengeResponse = await fetcher(endpoint + "/challenge", { signal: abort.signal, redirect: "error", headers: { "Cache-Control": "no-cache" } });
         if (!challengeResponse.ok) throw new Error(`\u041F\u041A \u043E\u0442\u0432\u0435\u0442\u0438\u043B HTTP ${challengeResponse.status}. \u041F\u0440\u043E\u0432\u0435\u0440\u044C Discord \u0438 \u0441\u0435\u0442\u044C.`);
         stage = "\u043F\u0440\u043E\u0432\u0435\u0440\u043A\u0430 \u043A\u043E\u0434\u0430 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F";
         const challenge = await challengeResponse.json();
@@ -1751,19 +1751,26 @@
         value.forEach((v) => visit(v, depth + 1));
         return;
       }
+      const type = value.type ?? value;
+      const typeName = type?.displayName || type?.name || type?.render?.name;
+      if (typeName === "QuestsIcon") labels.add("quests");
+      if (typeName === "ShopIcon" || typeName === "CollectiblesShopEntryButton") labels.add("shop");
+      if (typeName === "SettingsIcon") labels.add("settings");
       const p = value.props;
       if (!p) return;
       clickable || (clickable = typeof p.onPress === "function");
-      for (const name of ["label", "text", "title", "accessibilityLabel", "children"]) visit(p[name], depth + 1);
+      for (const name of ["label", "text", "title", "accessibilityLabel", "icon", "Icon", "children"]) visit(p[name], depth + 1);
     }
     visit(root, 0);
     return { labels, clickable };
   }
   function isProfileActionRow(element) {
     const children = element?.props?.children;
-    if (!Array.isArray(children) || children.length !== 3 || children.some((c) => c?.key === KEY)) return false;
-    const descriptions = children.map(describe);
-    return descriptions.every((d) => d.clickable) && groups.every((group) => descriptions.some((d) => [...d.labels].some((label) => group.has(label))));
+    if (!Array.isArray(children) || children.some((c) => c?.key === KEY)) return false;
+    const visible = children.flat(2).filter((c) => c != null && c !== false);
+    if (visible.length !== 3) return false;
+    const descriptions = visible.map(describe);
+    return descriptions.filter((d) => d.clickable).length >= 2 && groups.every((group) => descriptions.some((d) => [...d.labels].some((label) => group.has(label))));
   }
   function createProfileShortcut(api, renderSettings2) {
     const { React: React3, ReactNative: RN3, NavigationNative } = api.metro.common;

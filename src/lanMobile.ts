@@ -15,7 +15,9 @@ export function createMobileSync(api: any, studio: StudioController, fetcher = g
         const abort = new AbortController(), timeout = setTimeout(() => abort.abort(), 6000);
         let stage = "подключение к ПК";
         try {
-            const challengeResponse = await fetcher(endpoint + "/challenge", { signal: abort.signal, redirect: "error", cache: "no-store" });
+            // React Native's fetch polyfill rewrites cache:no-store into ?_=timestamp.
+            // Use HTTP headers instead; the desktop also sends Cache-Control: no-store.
+            const challengeResponse = await fetcher(endpoint + "/challenge", { signal: abort.signal, redirect: "error", headers: { "Cache-Control": "no-cache" } });
             if (!challengeResponse.ok) throw new Error(`ПК ответил HTTP ${challengeResponse.status}. Проверь Discord и сеть.`);
             stage = "проверка кода подключения";
             const challenge = await challengeResponse.json();

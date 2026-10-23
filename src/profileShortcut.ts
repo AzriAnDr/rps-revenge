@@ -10,10 +10,15 @@ function describe(root: any) {
         if (--remaining < 0 || depth > 5 || value == null) return;
         if (typeof value === "string") { labels.add(value.trim().toLowerCase()); return; }
         if (Array.isArray(value)) { value.forEach(v => visit(v, depth + 1)); return; }
+        const type = value.type ?? value;
+        const typeName = type?.displayName || type?.name || type?.render?.name;
+        if (typeName === "QuestsIcon") labels.add("quests");
+        if (typeName === "ShopIcon" || typeName === "CollectiblesShopEntryButton") labels.add("shop");
+        if (typeName === "SettingsIcon") labels.add("settings");
         const p = value.props;
         if (!p) return;
         clickable ||= typeof p.onPress === "function";
-        for (const name of ["label", "text", "title", "accessibilityLabel", "children"]) visit(p[name], depth + 1);
+        for (const name of ["label", "text", "title", "accessibilityLabel", "icon", "Icon", "children"]) visit(p[name], depth + 1);
     }
     visit(root, 0);
     return { labels, clickable };
@@ -21,9 +26,11 @@ function describe(root: any) {
 
 export function isProfileActionRow(element: any): boolean {
     const children = element?.props?.children;
-    if (!Array.isArray(children) || children.length !== 3 || children.some(c => c?.key === KEY)) return false;
-    const descriptions = children.map(describe);
-    return descriptions.every(d => d.clickable) && groups.every(group => descriptions.some(d => [...d.labels].some(label => group.has(label))));
+    if (!Array.isArray(children) || children.some(c => c?.key === KEY)) return false;
+    const visible = children.flat(2).filter(c => c != null && c !== false);
+    if (visible.length !== 3) return false;
+    const descriptions = visible.map(describe);
+    return descriptions.filter(d => d.clickable).length >= 2 && groups.every(group => descriptions.some(d => [...d.labels].some(label => group.has(label))));
 }
 
 export function createProfileShortcut(api: any, renderSettings: () => any) {
