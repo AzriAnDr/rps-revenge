@@ -287,6 +287,17 @@ export function createStudioController(deps: StudioDependencies) {
     }
 
     return {
+        replaceSyncedProfiles(profiles: PresenceProfile[], expected: PresenceProfile[]): boolean {
+            load();
+            if (JSON.stringify(data.profiles.map(sanitizeProfile)) !== JSON.stringify(expected.map(sanitizeProfile))) return false;
+            if (profiles.length > MAX_PROFILES) throw new Error("Слишком много синхронизированных профилей.");
+            const next = profiles.map(sanitizeProfile);
+            if (new Set(next.map(p => p.id)).size !== next.length) throw new Error("Повторяются ID профилей.");
+            if (JSON.stringify(next) === JSON.stringify(data.profiles)) return true;
+            persist({ ...data, profiles: next });
+            update({ profiles: next.map(copyProfile), message: "Профили синхронизированы. Опубликованная карточка не менялась." });
+            return true;
+        },
         getSnapshot(): StudioSnapshot { load(); return snapshot; },
         subscribe(listener: () => void) {
             listeners.add(listener);

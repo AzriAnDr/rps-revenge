@@ -1,0 +1,3 @@
+* text=auto
+dist/index.js text eol=lf
+dist/manifest.json text eol=lf

@@ -1,5 +1,7 @@
 import type { StudioController, StudioSnapshot } from "./shared/controllerCore";
 import { cloneProfile, createProfile, PresenceProfile } from "./shared/model";
+import { SyncPanel } from "./SyncPanel";
+import type { createMobileSync } from "./lanMobile";
 
 declare const vendetta: any;
 const { React, ReactNative: RN } = vendetta.metro.common;
@@ -31,7 +33,7 @@ function copy(profile: PresenceProfile): PresenceProfile {
     return { ...profile, buttons: profile.buttons.map(button => ({ ...button })) };
 }
 
-export function Settings({ controller }: { controller: StudioController }) {
+export function Settings({ controller, sync }: { controller: StudioController; sync?: ReturnType<typeof createMobileSync>; }) {
     const [snapshot, setSnapshot] = React.useState(() => controller.getSnapshot()) as [StudioSnapshot, (value: StudioSnapshot) => void];
     const [draft, setDraft] = React.useState(() => copy(controller.getSnapshot().profiles[0] ?? createProfile())) as [PresenceProfile, (value: any) => void];
     const [baseline, setBaseline] = React.useState(() => JSON.stringify(draft));
@@ -45,6 +47,16 @@ export function Settings({ controller }: { controller: StudioController }) {
         refresh();
         return unsubscribe;
     }, [controller]);
+    React.useEffect(() => {
+        const current = snapshot.profiles.find(profile => profile.id === draft.id);
+        if (JSON.stringify(draft) !== baseline) return;
+        if (current && JSON.stringify(current) !== baseline) {
+            setDraft(copy(current)); setBaseline(JSON.stringify(current));
+        } else if (!current) {
+            const next = snapshot.profiles[0] ?? createProfile();
+            setDraft(copy(next)); setBaseline(JSON.stringify(next));
+        }
+    }, [snapshot.profiles]);
 
     async function run(action: () => unknown) {
         setError(""); setNotice("");
@@ -67,7 +79,8 @@ export function Settings({ controller }: { controller: StudioController }) {
 
     return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 18, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <Text style={styles.heading}>Rich Presence Studio</Text>
-        <Text style={styles.hint}>Профили хранятся на этом устройстве. Перенос между ПК и телефоном — через JSON.</Text>
+        <Text style={styles.hint}>Профили хранятся на этом устройстве. Можно включить синхронизацию по Wi-Fi или переносить JSON вручную.</Text>
+        {sync && <SyncPanel sync={sync} />}
         <Text accessibilityLiveRegion="polite" style={{ color: snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 }}>{snapshot.message}</Text>
         {!!error && <Text accessibilityRole="alert" accessibilityLiveRegion="assertive" selectable style={{ color: colors.error, marginBottom: 12 }}>{error}</Text>}
         {!!notice && <Text accessibilityLiveRegion="polite" style={styles.hint}>{notice}</Text>}
