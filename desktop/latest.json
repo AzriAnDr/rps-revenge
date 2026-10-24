@@ -1,0 +1,4 @@
+{
+  "payload": "{\"version\":\"0.3.0\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.0/RichPresenceStudioSetup.exe\",\"size\":6346752,\"sha256\":\"486a443bba2ddb4524e55e197a7b60a55aab7084bfe51249f4a662379e401ee2\",\"notes\":\"Проверка обновлений и установка из Vencord. Настройки и сторонние плагины сохраняются; неизвестные сборки защищены от перезаписи.\"}",
+  "signature": "IXS5pCazFQr6oOW2VlvYpCFF534LwxBnf7eVSWylb9X7CnB2QVJ032b4OYJyIjR7BHW+1B5LdvasKbxFP3nQBw=="
+}
