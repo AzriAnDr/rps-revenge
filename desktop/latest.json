@@ -1,4 +1,4 @@
 {
-  "payload": "{\"version\":\"0.3.3\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.3/RichPresenceStudioSetup.exe\",\"size\":6361600,\"sha256\":\"0d3d8a5ced9a10f460b771568345e1172851293bb9e675ce679313764e463537\",\"notes\":\"Исправлены вкладки редактора и приоритет активности RPS; переключатель выбирает между карточкой и музыкой.\"}",
-  "signature": "savT6T/J0skaN6/6oSWDNR0/9l6AuikjxVAfeephCMmOJmAACyzGi/S1d5/QqbKUeqdg0gnckY9y1Xh5vBebAA=="
+  "payload": "{\"version\":\"0.3.4\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.4/RichPresenceStudioSetup.exe\",\"size\":6361600,\"sha256\":\"861d196b5e8b351be9a0078f391742a5d576e1584004364ec062780d5e46825a\",\"notes\":\"Вкладки редактора без полосы прокрутки: компактные кнопки и перенос целых вкладок на второй ряд.\"}",
+  "signature": "yJdLsdfVAie+Lv9uVo93HQTxBNsYHVLAwVTuBcsdTcoX+7Y/uQTfrXjCfLsQGcuzBKa4hhOS/p5HpHTrYczlBQ=="
 }
