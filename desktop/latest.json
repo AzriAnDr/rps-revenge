@@ -1,4 +1,4 @@
 {
-  "payload": "{\"version\":\"0.3.2\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.2/RichPresenceStudioSetup.exe\",\"size\":6361088,\"sha256\":\"a5202e27e40d6ac6eb97f77f15c60fbda821ffa840793dfde0786435fff0f953\",\"notes\":\"Исправлена установка с папкой настроек Vencord через junction; настройки и сторонние плагины сохраняются.\"}",
-  "signature": "g+x3x/HBl4mWeTUTMqhpHaADuMrANwau/jelM9Nvdt8qwg8hrrGQck5mrRGNwsKRL/tyGtlqpMjbMXshut1MAA=="
+  "payload": "{\"version\":\"0.3.3\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.3/RichPresenceStudioSetup.exe\",\"size\":6361600,\"sha256\":\"0d3d8a5ced9a10f460b771568345e1172851293bb9e675ce679313764e463537\",\"notes\":\"Исправлены вкладки редактора и приоритет активности RPS; переключатель выбирает между карточкой и музыкой.\"}",
+  "signature": "savT6T/J0skaN6/6oSWDNR0/9l6AuikjxVAfeephCMmOJmAACyzGi/S1d5/QqbKUeqdg0gnckY9y1Xh5vBebAA=="
 }
