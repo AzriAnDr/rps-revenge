@@ -1,4 +1,4 @@
 {
-  "payload": "{\"version\":\"0.3.1\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.1/RichPresenceStudioSetup.exe\",\"size\":6354944,\"sha256\":\"96771ce58a13f49b11c9169f69455f0b36d0eff555b6b3e0ea1e054a5b390e1c\",\"notes\":\"Запасная загрузка картинок на img402 при ошибке Catbox; предупреждение о сроке хранения.\"}",
-  "signature": "3yAc5TKxqOJSARJ6qOpiegu5ZCo61Bl8fTDt29CUUgqPivl3zOdJTZxX2gVp+0Hkq8zZPFVfNzZfkwJp+YfeAA=="
+  "payload": "{\"version\":\"0.3.2\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.2/RichPresenceStudioSetup.exe\",\"size\":6361088,\"sha256\":\"a5202e27e40d6ac6eb97f77f15c60fbda821ffa840793dfde0786435fff0f953\",\"notes\":\"Исправлена установка с папкой настроек Vencord через junction; настройки и сторонние плагины сохраняются.\"}",
+  "signature": "g+x3x/HBl4mWeTUTMqhpHaADuMrANwau/jelM9Nvdt8qwg8hrrGQck5mrRGNwsKRL/tyGtlqpMjbMXshut1MAA=="
 }
