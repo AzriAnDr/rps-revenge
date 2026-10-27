@@ -57,7 +57,12 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
         // presentation and Android back handling independently of that stack.
         return React.createElement(React.Fragment, null, button, open && React.createElement(RN.Modal, {
             visible: true, animationType: "slide", presentationStyle: "fullScreen", onRequestClose: close
-        }, React.createElement(RN.SafeAreaView, { style: { flex: 1, backgroundColor: "#17181d" } },
+        }, React.createElement(RN.SafeAreaView, { style: {
+            flex: 1, backgroundColor: "#17181d",
+            // Core SafeAreaView only applies native safe-area padding on iOS.
+            // Android 15 edge-to-edge also places modal content under the status bar.
+            paddingTop: RN.Platform?.OS === "android" ? (RN.StatusBar?.currentHeight ?? 0) : 0
+        } },
             React.createElement(RN.View, { style: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, minHeight: 56 } },
                 React.createElement(RN.Text, { style: { color: "#f3f4fa", fontSize: 18, fontWeight: "700", flex: 1 } }, "Rich Presence Studio"),
                 React.createElement(RN.Pressable, { accessibilityRole: "button", accessibilityLabel: "Закрыть настройки RPS", onPress: close, style: { padding: 12 } },

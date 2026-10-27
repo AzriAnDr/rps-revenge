@@ -292,7 +292,7 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.6";
+  var BUILD = "0.2.7";
   var presence = "not-applied";
   function recordPresence(value) {
     presence = value;
@@ -1842,7 +1842,13 @@
         onRequestClose: close
       }, React3.createElement(
         RN3.SafeAreaView,
-        { style: { flex: 1, backgroundColor: "#17181d" } },
+        { style: {
+          flex: 1,
+          backgroundColor: "#17181d",
+          // Core SafeAreaView only applies native safe-area padding on iOS.
+          // Android 15 edge-to-edge also places modal content under the status bar.
+          paddingTop: RN3.Platform?.OS === "android" ? RN3.StatusBar?.currentHeight ?? 0 : 0
+        } },
         React3.createElement(
           RN3.View,
           { style: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, minHeight: 56 } },
