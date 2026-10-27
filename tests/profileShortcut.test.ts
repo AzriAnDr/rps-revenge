@@ -25,7 +25,7 @@ test("matches observed Discord icons with hidden labels and a separate shop comp
 test("shortcut preserves original actions, opens settings and unpatches on unload", () => {
     const hooks: any[] = [], pushes: any[] = []; let removed = 0;
     const React = { createElement: element, cloneElement: (e: any, p: any, ...children: any[]) => element(e.type, { ...e.props, ...p }, ...children) };
-    const api: any = { metro: { common: { React, ReactNative: { Pressable: "Pressable", Text: "Text" }, NavigationNative: { useNavigation: () => ({ push: (...args: any[]) => pushes.push(args) }) } }, findByProps: () => ({ jsx() {}, jsxs() {} }) }, patcher: { after: (_method: string, _obj: any, cb: any) => { hooks.push(cb); return () => { removed++; }; } } };
+    const api: any = { metro: { common: { React, ReactNative: { Pressable: "Pressable", Text: "Text" }, NavigationNative: { useNavigation: () => { throw new Error("Profile navigator must not be used"); } } }, findByProps: (prop: string) => prop === "getRootNavigationRef" ? { getRootNavigationRef: () => ({ navigate: (...args: any[]) => pushes.push(args) }) } : { jsx() {}, jsxs() {} } }, patcher: { after: (_method: string, _obj: any, cb: any) => { hooks.push(cb); return () => { removed++; }; } } };
     const render = () => null, shortcut = createProfileShortcut(api, render);
     shortcut.start(); shortcut.start(); assert.equal(hooks.length, 3);
     const original = row(), enhanced = hooks[0]([], original);
@@ -35,4 +35,28 @@ test("shortcut preserves original actions, opens settings and unpatches on unloa
     const button = enhanced.props.children[3].type(); button.props.onPress();
     assert.deepEqual(pushes, [["BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render }]]);
     shortcut.stop(); assert.equal(removed, 3); assert.equal(hooks[0]([], original), undefined);
+});
+
+test("resolves root navigation at press time and reports an unavailable navigator", () => {
+    const hooks: any[] = [], alerts: any[] = [], errors: any[] = [], navigations: any[] = [];
+    let root: any = null;
+    const React = { createElement: element, cloneElement: (e: any, p: any, ...children: any[]) => element(e.type, { ...e.props, ...p }, ...children) };
+    const api: any = {
+        metro: {
+            common: { React, ReactNative: { Pressable: "Pressable", Text: "Text", Alert: { alert: (...args: any[]) => alerts.push(args) } } },
+            findByProps: (prop: string) => prop === "getRootNavigationRef" ? { getRootNavigationRef: () => root } : { jsx() {}, jsxs() {} }
+        },
+        logger: { error: (...args: any[]) => errors.push(args) },
+        patcher: { after: (_method: string, _obj: any, cb: any) => { hooks.push(cb); return () => {}; } }
+    };
+    const render = () => null, shortcut = createProfileShortcut(api, render);
+    shortcut.start();
+    const button = hooks[0]([], row()).props.children[3].type();
+    assert.doesNotThrow(() => button.props.onPress());
+    assert.equal(errors.length, 1); assert.equal(alerts.length, 1);
+    root = { navigate: (...args: any[]) => navigations.push(args) };
+    button.props.onPress();
+    assert.deepEqual(navigations, [["BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render }]]);
+    assert.equal(alerts.length, 1);
+    shortcut.stop();
 });

@@ -81,7 +81,7 @@ export function Settings({ controller, sync }: { controller: StudioController; s
     return <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={{ padding: 18, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
         <Text style={styles.heading}>Rich Presence Studio</Text>
         <Text style={styles.hint}>Сборка {BUILD}</Text>
-        <Button title="Копировать диагностику кнопки" onPress={() => void run(() => { vendetta.metro.common.clipboard.setString(diagnosticReport()); setNotice("Диагностика скопирована. В ней только названия компонентов и версия; профилей и кодов подключения нет."); })} />
+        <Button title="Копировать диагностику RPS" onPress={() => void run(() => { vendetta.metro.common.clipboard.setString(diagnosticReport()); setNotice("Диагностика скопирована. В ней версия, названия компонентов и этап отправки; профилей и кодов подключения нет."); })} />
         <Text style={styles.hint}>Профили хранятся на этом устройстве. Можно включить синхронизацию по Wi-Fi или переносить JSON вручную.</Text>
         {sync && <SyncPanel sync={sync} />}
         <Text accessibilityLiveRegion="polite" style={{ color: snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 }}>{snapshot.message}</Text>
@@ -135,7 +135,9 @@ export function Settings({ controller, sync }: { controller: StudioController; s
             <Button title="Выключить" danger onPress={() => void run(() => controller.disable())} />
         </View>
         <Text style={styles.hint}>«Сохранить» сохраняет редактор. «Применить» сохраняет и отправляет карточку в Discord.</Text>
-        <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 12 }}><Text style={[styles.text, { flex: 1 }]}>Восстанавливать при запуске</Text><Switch accessibilityLabel="Восстанавливать при запуске" value={snapshot.restoreOnStart} onValueChange={(value: boolean) => void run(() => controller.setRestoreOnStart(value))} /></View>
+        <Text accessibilityLiveRegion="polite" selectable style={{ color: error || snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 }}>{error || snapshot.message}</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", marginVertical: 12 }}><Text style={[styles.text, { flex: 1 }]}>Автоматически восстанавливать карточку</Text><Switch accessibilityLabel="Автоматически восстанавливать карточку" value={snapshot.restoreOnStart} onValueChange={(value: boolean) => void run(() => controller.setRestoreOnStart(value))} /></View>
+        <Text style={styles.hint}>Восстанавливает карточку при запуске Discord и возвращении из фона. Если Android остановит Discord, плагин не сможет поддерживать показ до следующего запуска.</Text>
 
         <Text style={styles.heading}>Перенос профилей</Text>
         <Text style={styles.hint}>Экспорт содержит сохранённые профили. Сначала сохрани изменения. Импорт добавляет профили, сохраняя существующие.</Text>

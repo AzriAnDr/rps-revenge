@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createRuntime, SOCKET_ID, PID } from "../src/runtime";
 import { createProfile, serializeProfiles, parseImport } from "../src/shared/model";
+import { diagnosticReport } from "../src/diagnostics";
 
 function setup() {
     const events:any[] = [], listeners = new Map<string,()=>void>();
@@ -20,6 +21,31 @@ function setup() {
     return {api,events,listeners,setUser:(id:string|null)=>{userId=id;},unsupported:()=>{supported=false;}};
 }
 const tick=()=>new Promise(r=>setTimeout(r,10));
+test("silent activity rejection is detected without erasing saved profiles",async()=>{
+    const s=setup(); s.api.metro.findByStoreName=()=>({getActivities:()=>[]});
+    const r=createRuntime(s.api);r.start();await r.controller.applyProfile(createProfile());
+    await new Promise(resolve=>setTimeout(resolve,1050));
+    assert.equal(r.controller.getSnapshot().phase,"error");
+    assert.match(r.controller.getSnapshot().message,/локальный список/);
+    assert.equal(JSON.parse(diagnosticReport()).presence,"local-missing");
+    assert.ok(s.api.plugin.storage.studioData.lastApplied);r.stop();
+});
+test("local activity verification detects accepted cards without claiming server confirmation",async()=>{
+    const s=setup();s.api.metro.findByStoreName=()=>({getActivities:()=>s.events.map(e=>e.activity).filter(Boolean)});
+    const r=createRuntime(s.api);r.start();await r.controller.applyProfile(createProfile());
+    await new Promise(resolve=>setTimeout(resolve,1050));
+    assert.equal(JSON.parse(diagnosticReport()).presence,"local-confirmed");
+    assert.equal(r.controller.getSnapshot().phase,"active");r.stop();
+});
+test("foreground restoration obeys toggle and cannot resurrect a disabled card",async()=>{
+    const s=setup();let change:(state:string)=>void=()=>{};let removed=false;
+    s.api.metro.common.ReactNative.AppState={addEventListener:(_event:string,cb:any)=>{change=cb;return {remove(){removed=true;}};}};
+    const r=createRuntime(s.api);r.start();await r.controller.applyProfile(createProfile());
+    change("active");await tick();assert.equal(s.events.length,1);
+    r.controller.setRestoreOnStart(true);change("active");await tick();assert.equal(s.events.length,2);
+    r.controller.disable();const count=s.events.length;change("active");await tick();assert.equal(s.events.length,count);
+    r.stop();assert.equal(removed,true);
+});
 test("mobile send and clear share identity; button URLs and images survive",async()=>{
     const s=setup(), r=createRuntime(s.api); r.start();
     const p=createProfile(); p.buttons=[{label:"🐾 Eltan",url:"https://example.com"}]; p.largeImage="https://example.com/a.png";

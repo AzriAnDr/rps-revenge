@@ -34,14 +34,25 @@ export function isProfileActionRow(element: any): boolean {
 }
 
 export function createProfileShortcut(api: any, renderSettings: () => any) {
-    const { React, ReactNative: RN, NavigationNative } = api.metro.common;
+    const { React, ReactNative: RN } = api.metro.common;
     let active = false, editing = false;
     const unpatch: (() => void)[] = [];
+    function openSettings() {
+        try {
+            // Match Revenge's settings/patches/shared.tsx: the profile's local
+            // navigator need not be a stack or own the custom settings route.
+            const navigation = api.metro.findByProps("getRootNavigationRef")?.getRootNavigationRef();
+            if (typeof navigation?.navigate !== "function") throw new Error("Root navigation unavailable");
+            navigation.navigate("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings });
+        } catch (e) {
+            api.logger?.error?.("RPS settings navigation", e);
+            RN.Alert?.alert?.("Rich Presence Studio", "Не удалось открыть настройки RPS. Открой их через Revenge → Plugins → Rich Presence Studio.");
+        }
+    }
     function Shortcut() {
-        const navigation = NavigationNative.useNavigation();
         return React.createElement(RN.Pressable, {
             accessibilityRole: "button", accessibilityLabel: "Rich Presence Studio — настроить статус",
-            onPress: () => navigation.push("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings }),
+            onPress: openSettings,
             hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
             style: { minWidth: 56, height: 44, flex: 1, alignSelf: "flex-start", alignItems: "center", justifyContent: "flex-start", paddingHorizontal: 6 }
         }, React.createElement(RN.Text, { style: { color: "#aeb8ff", fontSize: 24, lineHeight: 24, height: 24, includeFontPadding: false, textAlign: "center" } }, "✦"),
@@ -60,7 +71,7 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
     }
     return {
         start() {
-            if (active || !api.patcher?.after || !NavigationNative?.useNavigation) return;
+            if (active || !api.patcher?.after) return;
             active = true;
             try {
                 const jsx = api.metro.findByProps("jsx", "jsxs");

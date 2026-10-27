@@ -292,7 +292,11 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.4";
+  var BUILD = "0.2.5";
+  var presence = "not-applied";
+  function recordPresence(value) {
+    presence = value;
+  }
   var components = /* @__PURE__ */ new Set();
   var hooks = 0;
   var matches = 0;
@@ -308,7 +312,7 @@
     matches++;
   }
   function diagnosticReport() {
-    return JSON.stringify({ build: BUILD, hooks, matches, components: [...components] }, null, 2);
+    return JSON.stringify({ build: BUILD, hooks, matches, presence, components: [...components] }, null, 2);
   }
 
   // src/Settings.tsx
@@ -417,9 +421,9 @@
       setBaseline(JSON.stringify(draft));
     }
     const field = (key, label, maxLength = 128, url = false, placeholder = "") => /* @__PURE__ */ React2.createElement(Field, { label, value: draft[key], onChange: (value) => patch(key, value), maxLength, url, placeholder });
-    return /* @__PURE__ */ React2.createElement(ScrollView, { style: { backgroundColor: colors.background }, contentContainerStyle: { padding: 18, paddingBottom: 60 }, keyboardShouldPersistTaps: "handled" }, /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "Rich Presence Studio"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0421\u0431\u043E\u0440\u043A\u0430 ", BUILD), /* @__PURE__ */ React2.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 \u043A\u043D\u043E\u043F\u043A\u0438", onPress: () => void run(() => {
+    return /* @__PURE__ */ React2.createElement(ScrollView, { style: { backgroundColor: colors.background }, contentContainerStyle: { padding: 18, paddingBottom: 60 }, keyboardShouldPersistTaps: "handled" }, /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "Rich Presence Studio"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0421\u0431\u043E\u0440\u043A\u0430 ", BUILD), /* @__PURE__ */ React2.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 RPS", onPress: () => void run(() => {
       vendetta.metro.common.clipboard.setString(diagnosticReport());
-      setNotice("\u0414\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430. \u0412 \u043D\u0435\u0439 \u0442\u043E\u043B\u044C\u043A\u043E \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u043E\u0432 \u0438 \u0432\u0435\u0440\u0441\u0438\u044F; \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439 \u0438 \u043A\u043E\u0434\u043E\u0432 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442.");
+      setNotice("\u0414\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430. \u0412 \u043D\u0435\u0439 \u0432\u0435\u0440\u0441\u0438\u044F, \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u043E\u0432 \u0438 \u044D\u0442\u0430\u043F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438; \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439 \u0438 \u043A\u043E\u0434\u043E\u0432 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442.");
     }) }), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u041F\u0440\u043E\u0444\u0438\u043B\u0438 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435. \u041C\u043E\u0436\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044E \u043F\u043E Wi-Fi \u0438\u043B\u0438 \u043F\u0435\u0440\u0435\u043D\u043E\u0441\u0438\u0442\u044C JSON \u0432\u0440\u0443\u0447\u043D\u0443\u044E."), sync2 && /* @__PURE__ */ React2.createElement(SyncPanel, { sync: sync2 }), /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: { color: snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, snapshot.message), !!error && /* @__PURE__ */ React2.createElement(Text, { accessibilityRole: "alert", accessibilityLiveRegion: "assertive", selectable: true, style: { color: colors.error, marginBottom: 12 } }, error), !!notice && /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: styles.hint }, notice), !snapshot.sharingEnabled && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041F\u043E\u043A\u0430\u0437 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438 \u0432 Discord \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438\u043B\u0438 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438\u0442\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043E\u043D\u0444\u0438\u0434\u0435\u043D\u0446\u0438\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u0438 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438."), snapshot.conflict && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u0430 \u0434\u0440\u0443\u0433\u0430\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0430\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C. \u041E\u0442\u043A\u043B\u044E\u0447\u0438 \u0435\u0451, \u0435\u0441\u043B\u0438 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u0443\u044E\u0442."), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438"), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, snapshot.profiles.map((profile) => /* @__PURE__ */ React2.createElement(
       Button,
       {
@@ -444,7 +448,7 @@
       const applied = copy(draft);
       await controller.applyProfile(applied);
       setBaseline(JSON.stringify(applied));
-    }) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u0412\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C", danger: true, onPress: () => void run(() => controller.disable()) })), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\xAB\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440. \xAB\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0432 Discord."), /* @__PURE__ */ React2.createElement(View, { style: { flexDirection: "row", alignItems: "center", marginVertical: 12 } }, /* @__PURE__ */ React2.createElement(Text, { style: [styles.text, { flex: 1 }] }, "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043F\u0440\u0438 \u0437\u0430\u043F\u0443\u0441\u043A\u0435"), /* @__PURE__ */ React2.createElement(Switch, { accessibilityLabel: "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043F\u0440\u0438 \u0437\u0430\u043F\u0443\u0441\u043A\u0435", value: snapshot.restoreOnStart, onValueChange: (value) => void run(() => controller.setRestoreOnStart(value)) })), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u0418\u043C\u043F\u043E\u0440\u0442 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0440\u043E\u0444\u0438\u043B\u0438, \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044F \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0435."), /* @__PURE__ */ React2.createElement(Field, { label: "JSON \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439", value: json, onChange: setJson, multiline: true, url: true, maxLength: 1048577, placeholder: "\u0412\u0441\u0442\u0430\u0432\u044C JSON \u0441 \u041F\u041A \u0438\u043B\u0438 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430" }), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, /* @__PURE__ */ React2.createElement(Button, { title: "\u0418\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C JSON", onPress: () => void run(() => {
+    }) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u0412\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C", danger: true, onPress: () => void run(() => controller.disable()) })), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\xAB\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440. \xAB\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0432 Discord."), /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", selectable: true, style: { color: error || snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, error || snapshot.message), /* @__PURE__ */ React2.createElement(View, { style: { flexDirection: "row", alignItems: "center", marginVertical: 12 } }, /* @__PURE__ */ React2.createElement(Text, { style: [styles.text, { flex: 1 }] }, "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443"), /* @__PURE__ */ React2.createElement(Switch, { accessibilityLabel: "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443", value: snapshot.restoreOnStart, onValueChange: (value) => void run(() => controller.setRestoreOnStart(value)) })), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0435\u0442 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u043F\u0440\u0438 \u0437\u0430\u043F\u0443\u0441\u043A\u0435 Discord \u0438 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D\u0438\u0438 \u0438\u0437 \u0444\u043E\u043D\u0430. \u0415\u0441\u043B\u0438 Android \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442 Discord, \u043F\u043B\u0430\u0433\u0438\u043D \u043D\u0435 \u0441\u043C\u043E\u0436\u0435\u0442 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0430\u0437 \u0434\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0433\u043E \u0437\u0430\u043F\u0443\u0441\u043A\u0430."), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u0418\u043C\u043F\u043E\u0440\u0442 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0440\u043E\u0444\u0438\u043B\u0438, \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044F \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0435."), /* @__PURE__ */ React2.createElement(Field, { label: "JSON \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439", value: json, onChange: setJson, multiline: true, url: true, maxLength: 1048577, placeholder: "\u0412\u0441\u0442\u0430\u0432\u044C JSON \u0441 \u041F\u041A \u0438\u043B\u0438 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430" }), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, /* @__PURE__ */ React2.createElement(Button, { title: "\u0418\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C JSON", onPress: () => void run(() => {
       controller.importProfiles(json);
       setNotice("\u041F\u0440\u043E\u0444\u0438\u043B\u0438 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u044B. \u0412\u044B\u0431\u0435\u0440\u0438 \u043D\u0443\u0436\u043D\u044B\u0439 \u0432\u044B\u0448\u0435.");
     }) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u044D\u043A\u0441\u043F\u043E\u0440\u0442", onPress: () => void run(() => setJson(controller.exportProfiles())) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u044D\u043A\u0441\u043F\u043E\u0440\u0442", onPress: () => void run(async () => {
@@ -664,7 +668,7 @@
         }
         deps.publish(activity);
         lastPublishedAt = now();
-        update({ activeProfile: copyProfile(clean2), phase: "active", message: "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u0435\u043D\u0430 \u0432 Discord.", ...environment() });
+        update({ activeProfile: copyProfile(clean2), phase: "active", message: "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430 \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0443 Discord. \u0412\u0438\u0434\u0438\u043C\u043E\u0441\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u043C \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F\u043C \u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430.", ...environment() });
         persist({ ...data, lastApplied: clean2, lastOwnerId: userId, resumeEnabled: true });
       } catch (error) {
         if (request !== generation || !running) return;
@@ -795,18 +799,43 @@
     let lastActivity = null;
     let installed = false;
     let timer;
+    let verification;
     let pendingLogout = false;
     let pendingReconnect = false;
+    let appStateSubscription;
     const subscriptions = [];
     const user = () => api.metro.findByProps("getCurrentUser")?.getCurrentUser?.()?.id ?? null;
     function publish(activity) {
       const actions = api.metro.findByProps("SET_ACTIVITY");
-      if (!actions || !dispatcher?.dispatch) {
+      if (!actions?.SET_ACTIVITY || !dispatcher?.dispatch) {
         if (!activity && !lastActivity) return;
         throw new Error("\u042D\u0442\u0430 \u0432\u0435\u0440\u0441\u0438\u044F Discord \u043D\u0435 \u043F\u0440\u0435\u0434\u043E\u0441\u0442\u0430\u0432\u043B\u044F\u0435\u0442 API \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438. \u041E\u0431\u043D\u043E\u0432\u0438 Revenge/Discord \u0434\u043E \u0441\u043E\u0432\u043C\u0435\u0441\u0442\u0438\u043C\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438.");
       }
       dispatcher.dispatch({ type: "LOCAL_ACTIVITY_UPDATE", activity, socketId: SOCKET_ID, pid: PID });
       lastActivity = activity;
+      if (verification !== void 0) clearTimeout(verification);
+      recordPresence(activity ? "dispatched" : "cleared");
+      if (activity) verification = setTimeout(() => {
+        verification = void 0;
+        if (!installed || lastActivity !== activity) return;
+        try {
+          const store = api.metro.findByStoreName?.("SelfPresenceStore");
+          if (typeof store?.getActivities !== "function") {
+            recordPresence("verification-unavailable");
+            return;
+          }
+          const activities = store.getActivities();
+          if (!Array.isArray(activities)) {
+            recordPresence("verification-unavailable");
+            return;
+          }
+          const found = activities.some((item) => item?.application_id === activity.application_id && item?.name === activity.name && item?.type === activity.type);
+          recordPresence(found ? "local-confirmed" : "local-missing");
+          if (!found) controller.reportRuntimeError("Discord \u043D\u0435 \u0434\u043E\u0431\u0430\u0432\u0438\u043B \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0432 \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0439 \u0441\u043F\u0438\u0441\u043E\u043A \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438. \u0421\u043A\u043E\u043F\u0438\u0440\u0443\u0439 \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 RPS; \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438 \u043D\u0435 \u043F\u043E\u0442\u0435\u0440\u044F\u043D\u044B.");
+        } catch {
+          recordPresence("verification-unavailable");
+        }
+      }, 1e3);
     }
     const controller = createStudioController({
       read: () => api.plugin.storage.studioData,
@@ -865,6 +894,9 @@
         installed = true;
         try {
           controller.start();
+          appStateSubscription = api.metro.common.ReactNative?.AppState?.addEventListener?.("change", (state) => {
+            if (state === "active" && controller.getSnapshot().restoreOnStart) schedule(false, true);
+          });
           for (const [event, logout, reconnect] of [
             ["LOGOUT", true, false],
             ["CONNECTION_OPEN", false, true],
@@ -880,7 +912,10 @@
       },
       stop() {
         installed = false;
+        appStateSubscription?.remove();
+        appStateSubscription = void 0;
         if (timer !== void 0) clearTimeout(timer);
+        if (verification !== void 0) clearTimeout(verification);
         for (const [event, handler] of subscriptions.splice(0)) dispatcher.unsubscribe(event, handler);
         try {
           controller.stop();
@@ -1773,17 +1808,26 @@
     return descriptions.filter((d) => d.clickable).length >= 2 && groups.every((group) => descriptions.some((d) => [...d.labels].some((label) => group.has(label))));
   }
   function createProfileShortcut(api, renderSettings2) {
-    const { React: React3, ReactNative: RN3, NavigationNative } = api.metro.common;
+    const { React: React3, ReactNative: RN3 } = api.metro.common;
     let active = false, editing = false;
     const unpatch = [];
+    function openSettings() {
+      try {
+        const navigation = api.metro.findByProps("getRootNavigationRef")?.getRootNavigationRef();
+        if (typeof navigation?.navigate !== "function") throw new Error("Root navigation unavailable");
+        navigation.navigate("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings2 });
+      } catch (e) {
+        api.logger?.error?.("RPS settings navigation", e);
+        RN3.Alert?.alert?.("Rich Presence Studio", "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 RPS. \u041E\u0442\u043A\u0440\u043E\u0439 \u0438\u0445 \u0447\u0435\u0440\u0435\u0437 Revenge \u2192 Plugins \u2192 Rich Presence Studio.");
+      }
+    }
     function Shortcut() {
-      const navigation = NavigationNative.useNavigation();
       return React3.createElement(
         RN3.Pressable,
         {
           accessibilityRole: "button",
           accessibilityLabel: "Rich Presence Studio \u2014 \u043D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443\u0441",
-          onPress: () => navigation.push("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings2 }),
+          onPress: openSettings,
           hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
           style: { minWidth: 56, height: 44, flex: 1, alignSelf: "flex-start", alignItems: "center", justifyContent: "flex-start", paddingHorizontal: 6 }
         },
@@ -1807,7 +1851,7 @@
     }
     return {
       start() {
-        if (active || !api.patcher?.after || !NavigationNative?.useNavigation) return;
+        if (active || !api.patcher?.after) return;
         active = true;
         try {
           const jsx = api.metro.findByProps("jsx", "jsxs");

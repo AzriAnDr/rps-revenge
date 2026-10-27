@@ -1,4 +1,5 @@
 import { createStudioController, StudioActivity } from "./shared/controllerCore";
+import { recordPresence } from "./diagnostics";
 
 export const SOCKET_ID = "RichPresenceStudio@Revenge";
 export const PID = 156313;
@@ -9,19 +10,36 @@ export function createRuntime(api: any) {
     let lastActivity: StudioActivity | null = null;
     let installed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
+    let verification: ReturnType<typeof setTimeout> | undefined;
     let pendingLogout = false;
     let pendingReconnect = false;
+    let appStateSubscription: { remove(): void } | undefined;
     const subscriptions: [string, () => void][] = [];
     const user = () => api.metro.findByProps("getCurrentUser")?.getCurrentUser?.()?.id ?? null;
     function publish(activity: StudioActivity | null) {
         // Initializing this mobile module registers the LOCAL_ACTIVITY_UPDATE handler.
         const actions = api.metro.findByProps("SET_ACTIVITY");
-        if (!actions || !dispatcher?.dispatch) {
+        if (!actions?.SET_ACTIVITY || !dispatcher?.dispatch) {
             if (!activity && !lastActivity) return;
             throw new Error("Эта версия Discord не предоставляет API активности. Обнови Revenge/Discord до совместимой версии.");
         }
         dispatcher.dispatch({ type: "LOCAL_ACTIVITY_UPDATE", activity, socketId: SOCKET_ID, pid: PID });
         lastActivity = activity;
+        if (verification !== undefined) clearTimeout(verification);
+        recordPresence(activity ? "dispatched" : "cleared");
+        if (activity) verification = setTimeout(() => {
+            verification = undefined;
+            if (!installed || lastActivity !== activity) return;
+            try {
+                const store = api.metro.findByStoreName?.("SelfPresenceStore");
+                if (typeof store?.getActivities !== "function") { recordPresence("verification-unavailable"); return; }
+                const activities = store.getActivities();
+                if (!Array.isArray(activities)) { recordPresence("verification-unavailable"); return; }
+                const found = activities.some((item: any) => item?.application_id === activity.application_id && item?.name === activity.name && item?.type === activity.type);
+                recordPresence(found ? "local-confirmed" : "local-missing");
+                if (!found) controller.reportRuntimeError("Discord не добавил карточку в локальный список активности. Скопируй диагностику RPS; сохранённые профили не потеряны.");
+            } catch { recordPresence("verification-unavailable"); }
+        }, 1000);
     }
     const controller = createStudioController({
         read: () => api.plugin.storage.studioData,
@@ -73,6 +91,9 @@ export function createRuntime(api: any) {
             installed = true;
             try {
                 controller.start();
+                appStateSubscription = api.metro.common.ReactNative?.AppState?.addEventListener?.("change", (state: string) => {
+                    if (state === "active" && controller.getSnapshot().restoreOnStart) schedule(false, true);
+                });
                 for (const [event, logout, reconnect] of [
                     ["LOGOUT", true, false], ["CONNECTION_OPEN", false, true], ["CURRENT_USER_UPDATE", false, false]
                 ] as const) {
@@ -84,7 +105,10 @@ export function createRuntime(api: any) {
         },
         stop() {
             installed = false;
+            appStateSubscription?.remove();
+            appStateSubscription = undefined;
             if (timer !== undefined) clearTimeout(timer);
+            if (verification !== undefined) clearTimeout(verification);
             for (const [event, handler] of subscriptions.splice(0)) dispatcher.unsubscribe(event, handler);
             try { controller.stop(); } catch (e) { api.logger?.error?.(e); }
         }

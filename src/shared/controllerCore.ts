@@ -260,7 +260,7 @@ export function createStudioController(deps: StudioDependencies) {
             }
             deps.publish(activity);
             lastPublishedAt = now();
-            update({ activeProfile: copyProfile(clean), phase: "active", message: "Карточка отправлена в Discord.", ...environment() });
+            update({ activeProfile: copyProfile(clean), phase: "active", message: "Карточка передана клиенту Discord. Видимость другим пользователям ещё не подтверждена.", ...environment() });
             persist({ ...data, lastApplied: clean, lastOwnerId: userId, resumeEnabled: true });
         } catch (error) {
             if (request !== generation || !running) return;
