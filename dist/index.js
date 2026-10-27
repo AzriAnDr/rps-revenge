@@ -292,7 +292,7 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.5";
+  var BUILD = "0.2.6";
   var presence = "not-applied";
   function recordPresence(value) {
     presence = value;
@@ -1811,29 +1811,50 @@
     const { React: React3, ReactNative: RN3 } = api.metro.common;
     let active = false, editing = false;
     const unpatch = [];
-    function openSettings() {
-      try {
-        const navigation = api.metro.findByProps("getRootNavigationRef")?.getRootNavigationRef();
-        if (typeof navigation?.navigate !== "function") throw new Error("Root navigation unavailable");
-        navigation.navigate("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings2 });
-      } catch (e) {
-        api.logger?.error?.("RPS settings navigation", e);
-        RN3.Alert?.alert?.("Rich Presence Studio", "\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u0442\u043A\u0440\u044B\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 RPS. \u041E\u0442\u043A\u0440\u043E\u0439 \u0438\u0445 \u0447\u0435\u0440\u0435\u0437 Revenge \u2192 Plugins \u2192 Rich Presence Studio.");
-      }
-    }
+    const closeEditors = /* @__PURE__ */ new Set();
     function Shortcut() {
-      return React3.createElement(
+      const [open2, setOpen] = React3.useState(false);
+      const close = () => setOpen(false);
+      React3.useEffect(() => {
+        closeEditors.add(close);
+        return () => {
+          closeEditors.delete(close);
+        };
+      }, []);
+      const button = React3.createElement(
         RN3.Pressable,
         {
           accessibilityRole: "button",
           accessibilityLabel: "Rich Presence Studio \u2014 \u043D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443\u0441",
-          onPress: openSettings,
+          onPress: () => {
+            if (active) setOpen(true);
+          },
           hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
           style: { minWidth: 56, height: 44, flex: 1, alignSelf: "flex-start", alignItems: "center", justifyContent: "flex-start", paddingHorizontal: 6 }
         },
         React3.createElement(RN3.Text, { style: { color: "#aeb8ff", fontSize: 24, lineHeight: 24, height: 24, includeFontPadding: false, textAlign: "center" } }, "\u2726"),
         React3.createElement(RN3.Text, { style: { color: "#eeeeee", fontSize: 12, lineHeight: 16, fontWeight: "600", includeFontPadding: false, marginTop: 4 } }, "RPS")
       );
+      return React3.createElement(React3.Fragment, null, button, open2 && React3.createElement(RN3.Modal, {
+        visible: true,
+        animationType: "slide",
+        presentationStyle: "fullScreen",
+        onRequestClose: close
+      }, React3.createElement(
+        RN3.SafeAreaView,
+        { style: { flex: 1, backgroundColor: "#17181d" } },
+        React3.createElement(
+          RN3.View,
+          { style: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, minHeight: 56 } },
+          React3.createElement(RN3.Text, { style: { color: "#f3f4fa", fontSize: 18, fontWeight: "700", flex: 1 } }, "Rich Presence Studio"),
+          React3.createElement(
+            RN3.Pressable,
+            { accessibilityRole: "button", accessibilityLabel: "\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 RPS", onPress: close, style: { padding: 12 } },
+            React3.createElement(RN3.Text, { style: { color: "#aeb8ff", fontSize: 16 } }, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C")
+          )
+        ),
+        React3.createElement(renderSettings2)
+      )));
     }
     function inject(_args, element) {
       if (!active || editing) return;
@@ -1865,6 +1886,8 @@
       },
       stop() {
         active = false;
+        for (const close of closeEditors) close();
+        closeEditors.clear();
         for (const undo of unpatch.splice(0).reverse()) undo();
         setHookCount(0);
       }

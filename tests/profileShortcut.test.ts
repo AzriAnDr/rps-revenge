@@ -22,41 +22,58 @@ test("matches observed Discord icons with hidden labels and a separate shop comp
     observed.props.children[1][1] = element("OtherButton", {});
     assert.equal(isProfileActionRow(observed), false);
 });
-test("shortcut preserves original actions, opens settings and unpatches on unload", () => {
-    const hooks: any[] = [], pushes: any[] = []; let removed = 0;
-    const React = { createElement: element, cloneElement: (e: any, p: any, ...children: any[]) => element(e.type, { ...e.props, ...p }, ...children) };
-    const api: any = { metro: { common: { React, ReactNative: { Pressable: "Pressable", Text: "Text" }, NavigationNative: { useNavigation: () => { throw new Error("Profile navigator must not be used"); } } }, findByProps: (prop: string) => prop === "getRootNavigationRef" ? { getRootNavigationRef: () => ({ navigate: (...args: any[]) => pushes.push(args) }) } : { jsx() {}, jsxs() {} } }, patcher: { after: (_method: string, _obj: any, cb: any) => { hooks.push(cb); return () => { removed++; }; } } };
+// Small state/effect harness: exercise the actual injected component and its
+// press/back/unload handlers without pretending to render a native Android UI.
+function fixture() {
+    const hooks: any[] = [], cleanups: any[] = []; let removed = 0, open = false, mounted = false;
+    const React = {
+        Fragment: "Fragment", createElement: element,
+        cloneElement: (e: any, p: any, ...children: any[]) => element(e.type, { ...e.props, ...p }, ...children),
+        useState: () => [open, (value: boolean) => { open = value; }],
+        useEffect: (effect: () => any) => { if (!mounted) { mounted = true; cleanups.push(effect()); } }
+    };
+    const api: any = {
+        metro: {
+            common: { React, ReactNative: { Pressable: "Pressable", Text: "Text", View: "View", SafeAreaView: "SafeAreaView", Modal: "Modal" } },
+            findByProps: (prop: string) => { assert.equal(prop, "jsx"); return { jsx() {}, jsxs() {} }; }
+        },
+        patcher: { after: (_method: string, _obj: any, cb: any) => { hooks.push(cb); return () => { removed++; }; } }
+    };
     const render = () => null, shortcut = createProfileShortcut(api, render);
     shortcut.start(); shortcut.start(); assert.equal(hooks.length, 3);
     const original = row(), enhanced = hooks[0]([], original);
-    assert.equal(original.props.children.length, 3); assert.equal(enhanced.props.children.length, 4);
-    assert.equal(enhanced.props.children[0], original.props.children[0]);
-    assert.equal(hooks[1]([], enhanced), undefined);
-    const button = enhanced.props.children[3].type(); button.props.onPress();
-    assert.deepEqual(pushes, [["BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render }]]);
-    shortcut.stop(); assert.equal(removed, 3); assert.equal(hooks[0]([], original), undefined);
+    const component = enhanced.props.children[3].type;
+    return { hooks, cleanups, shortcut, original, enhanced, component, render, removed: () => removed };
+}
+
+test("shortcut preserves actions and opens its own editor without a navigation route", () => {
+    const f = fixture();
+    assert.equal(f.original.props.children.length, 3); assert.equal(f.enhanced.props.children.length, 4);
+    assert.equal(f.enhanced.props.children[0], f.original.props.children[0]);
+    assert.equal(f.hooks[1]([], f.enhanced), undefined);
+    let output = f.component();
+    assert.equal(output.props.children[1], false);
+    output.props.children[0].props.onPress();
+    output = f.component();
+    const modal = output.props.children[1];
+    assert.equal(modal.type, "Modal"); assert.equal(modal.props.visible, true);
+    assert.equal(modal.props.children[0].props.children[1].type, f.render);
+    modal.props.onRequestClose();
+    assert.equal(f.component().props.children[1], false);
+    f.shortcut.stop(); assert.equal(f.removed(), 3);
 });
 
-test("resolves root navigation at press time and reports an unavailable navigator", () => {
-    const hooks: any[] = [], alerts: any[] = [], errors: any[] = [], navigations: any[] = [];
-    let root: any = null;
-    const React = { createElement: element, cloneElement: (e: any, p: any, ...children: any[]) => element(e.type, { ...e.props, ...p }, ...children) };
-    const api: any = {
-        metro: {
-            common: { React, ReactNative: { Pressable: "Pressable", Text: "Text", Alert: { alert: (...args: any[]) => alerts.push(args) } } },
-            findByProps: (prop: string) => prop === "getRootNavigationRef" ? { getRootNavigationRef: () => root } : { jsx() {}, jsxs() {} }
-        },
-        logger: { error: (...args: any[]) => errors.push(args) },
-        patcher: { after: (_method: string, _obj: any, cb: any) => { hooks.push(cb); return () => {}; } }
-    };
-    const render = () => null, shortcut = createProfileShortcut(api, render);
-    shortcut.start();
-    const button = hooks[0]([], row()).props.children[3].type();
-    assert.doesNotThrow(() => button.props.onPress());
-    assert.equal(errors.length, 1); assert.equal(alerts.length, 1);
-    root = { navigate: (...args: any[]) => navigations.push(args) };
+test("close button and plugin unload dismiss editor; stale button cannot reopen it", () => {
+    const f = fixture(), button = f.component().props.children[0];
     button.props.onPress();
-    assert.deepEqual(navigations, [["BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render }]]);
-    assert.equal(alerts.length, 1);
-    shortcut.stop();
+    const modal = f.component().props.children[1];
+    const header = modal.props.children[0].props.children[0];
+    header.props.children[1].props.onPress();
+    assert.equal(f.component().props.children[1], false);
+    button.props.onPress(); assert.equal(f.component().props.children[1].type, "Modal");
+    f.shortcut.stop();
+    assert.equal(f.component().props.children[1], false);
+    button.props.onPress(); assert.equal(f.component().props.children[1], false);
+    assert.equal(f.hooks[0]([], row()), undefined);
+    for (const cleanup of f.cleanups) cleanup();
 });

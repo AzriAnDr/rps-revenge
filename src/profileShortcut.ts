@@ -37,26 +37,32 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
     const { React, ReactNative: RN } = api.metro.common;
     let active = false, editing = false;
     const unpatch: (() => void)[] = [];
-    function openSettings() {
-        try {
-            // Match Revenge's settings/patches/shared.tsx: the profile's local
-            // navigator need not be a stack or own the custom settings route.
-            const navigation = api.metro.findByProps("getRootNavigationRef")?.getRootNavigationRef();
-            if (typeof navigation?.navigate !== "function") throw new Error("Root navigation unavailable");
-            navigation.navigate("BUNNY_CUSTOM_PAGE", { title: "Rich Presence Studio", render: renderSettings });
-        } catch (e) {
-            api.logger?.error?.("RPS settings navigation", e);
-            RN.Alert?.alert?.("Rich Presence Studio", "Не удалось открыть настройки RPS. Открой их через Revenge → Plugins → Rich Presence Studio.");
-        }
-    }
+    const closeEditors = new Set<() => void>();
     function Shortcut() {
-        return React.createElement(RN.Pressable, {
+        const [open, setOpen] = React.useState(false);
+        const close = () => setOpen(false);
+        React.useEffect(() => {
+            closeEditors.add(close);
+            return () => { closeEditors.delete(close); };
+        }, []);
+        const button = React.createElement(RN.Pressable, {
             accessibilityRole: "button", accessibilityLabel: "Rich Presence Studio — настроить статус",
-            onPress: openSettings,
+            onPress: () => { if (active) setOpen(true); },
             hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
             style: { minWidth: 56, height: 44, flex: 1, alignSelf: "flex-start", alignItems: "center", justifyContent: "flex-start", paddingHorizontal: 6 }
         }, React.createElement(RN.Text, { style: { color: "#aeb8ff", fontSize: 24, lineHeight: 24, height: 24, includeFontPadding: false, textAlign: "center" } }, "✦"),
         React.createElement(RN.Text, { style: { color: "#eeeeee", fontSize: 12, lineHeight: 16, fontWeight: "600", includeFontPadding: false, marginTop: 4 } }, "RPS"));
+        // The custom settings route belongs to Discord's settings stack and can
+        // silently ignore navigation from the profile. A native modal owns its
+        // presentation and Android back handling independently of that stack.
+        return React.createElement(React.Fragment, null, button, open && React.createElement(RN.Modal, {
+            visible: true, animationType: "slide", presentationStyle: "fullScreen", onRequestClose: close
+        }, React.createElement(RN.SafeAreaView, { style: { flex: 1, backgroundColor: "#17181d" } },
+            React.createElement(RN.View, { style: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, minHeight: 56 } },
+                React.createElement(RN.Text, { style: { color: "#f3f4fa", fontSize: 18, fontWeight: "700", flex: 1 } }, "Rich Presence Studio"),
+                React.createElement(RN.Pressable, { accessibilityRole: "button", accessibilityLabel: "Закрыть настройки RPS", onPress: close, style: { padding: 12 } },
+                    React.createElement(RN.Text, { style: { color: "#aeb8ff", fontSize: 16 } }, "Закрыть"))),
+            React.createElement(renderSettings))));
     }
     function inject(_args: unknown[], element: any) {
         if (!active || editing) return;
@@ -80,6 +86,6 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
                 setHookCount(unpatch.length);
             } catch (e) { this.stop(); api.logger?.error?.("RPS profile shortcut unavailable", e); }
         },
-        stop() { active = false; for (const undo of unpatch.splice(0).reverse()) undo(); setHookCount(0); }
+        stop() { active = false; for (const close of closeEditors) close(); closeEditors.clear(); for (const undo of unpatch.splice(0).reverse()) undo(); setHookCount(0); }
     };
 }
