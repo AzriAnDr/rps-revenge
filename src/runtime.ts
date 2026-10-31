@@ -8,6 +8,10 @@ export const PID = 156313;
 export function createRuntime(api: any) {
     const dispatcher = api.metro.common.FluxDispatcher;
     let lastActivity: StudioActivity | null = null;
+    let desiredActivity: StudioActivity | null = null;
+    let yieldingToDesktop = false;
+    let sessionStore: any;
+    let sessionListener: (() => void) | undefined;
     let installed = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let verification: ReturnType<typeof setTimeout> | undefined;
@@ -16,7 +20,33 @@ export function createRuntime(api: any) {
     let appStateSubscription: { remove(): void } | undefined;
     const subscriptions: [string, () => void][] = [];
     const user = () => api.metro.findByProps("getCurrentUser")?.getCurrentUser?.()?.id ?? null;
+    function desktopHasActivity(): boolean {
+        try {
+            const sessions = api.metro.findByStoreName?.("SessionsStore")?.getSessions?.();
+            if (!sessions || typeof sessions !== "object") return false;
+            return Object.values(sessions).some((session: any) => {
+                const client = session?.clientInfo?.client ?? session?.client_info?.client;
+                if (client !== "desktop" || session.status === "offline" || session.status === "invisible") return false;
+                return Array.isArray(session.activities) && session.activities.some((item: any) =>
+                    typeof item?.application_id === "string" && item.application_id.length > 0 && item.type !== 4);
+            });
+        } catch { return false; }
+    }
+    const priorityMessage = () => yieldingToDesktop
+        ? "Активность на ПК имеет приоритет. Телефон ожидает; выбранный профиль сохранён."
+        : "Карточка передана клиенту Discord. Видимость другим пользователям ещё не подтверждена.";
     function publish(activity: StudioActivity | null) {
+        desiredActivity = activity;
+        yieldingToDesktop = !!activity && desktopHasActivity();
+        const outgoing = yieldingToDesktop ? null : activity;
+        if (!outgoing && !lastActivity) {
+            recordPresence(yieldingToDesktop ? "desktop-priority" : "cleared");
+            return;
+        }
+        send(outgoing);
+        if (yieldingToDesktop) recordPresence("desktop-priority");
+    }
+    function send(activity: StudioActivity | null) {
         // Initializing this mobile module registers the LOCAL_ACTIVITY_UPDATE handler.
         const actions = api.metro.findByProps("SET_ACTIVITY");
         if (!actions?.SET_ACTIVITY || !dispatcher?.dispatch) {
@@ -48,6 +78,7 @@ export function createRuntime(api: any) {
         getUserId: user,
         getSharingEnabled: () => true,
         getConflict: () => false,
+        getPublishMessage: priorityMessage,
         resolveAsset: async (appId, asset) => {
             const manager = api.metro.findByProps("fetchAssetIds");
             if (!manager?.fetchAssetIds) throw new Error("В этой версии Discord не найден обработчик картинок Rich Presence.");
@@ -79,7 +110,13 @@ export function createRuntime(api: any) {
                 if (logout) controller.onLogout();
                 else {
                     controller.refreshEnvironment();
-                    if (reconnect && lastActivity && controller.getSnapshot().activeProfile) publish(lastActivity);
+                    if (desiredActivity && controller.getSnapshot().activeProfile) {
+                        const shouldYield = desktopHasActivity();
+                        if (reconnect || shouldYield !== yieldingToDesktop) {
+                            publish(desiredActivity);
+                            controller.reportRuntimeMessage(priorityMessage());
+                        }
+                    }
                 }
             } catch (e) { error(e); }
         }, 0);
@@ -91,11 +128,15 @@ export function createRuntime(api: any) {
             installed = true;
             try {
                 controller.start();
+                sessionStore = api.metro.findByStoreName?.("SessionsStore");
+                sessionListener = () => schedule(false, false);
+                sessionStore?.addChangeListener?.(sessionListener);
                 appStateSubscription = api.metro.common.ReactNative?.AppState?.addEventListener?.("change", (state: string) => {
                     if (state === "active" && controller.getSnapshot().restoreOnStart) schedule(false, true);
                 });
                 for (const [event, logout, reconnect] of [
-                    ["LOGOUT", true, false], ["CONNECTION_OPEN", false, true], ["CURRENT_USER_UPDATE", false, false]
+                    ["LOGOUT", true, false], ["CONNECTION_OPEN", false, true], ["CURRENT_USER_UPDATE", false, false],
+                    ["SESSIONS_REPLACE", false, false]
                 ] as const) {
                     const handler = () => schedule(logout, reconnect);
                     dispatcher.subscribe(event, handler);
@@ -105,6 +146,9 @@ export function createRuntime(api: any) {
         },
         stop() {
             installed = false;
+            if (sessionListener) sessionStore?.removeChangeListener?.(sessionListener);
+            sessionListener = undefined;
+            sessionStore = undefined;
             appStateSubscription?.remove();
             appStateSubscription = undefined;
             if (timer !== undefined) clearTimeout(timer);

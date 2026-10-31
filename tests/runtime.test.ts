@@ -21,6 +21,56 @@ function setup() {
     return {api,events,listeners,setUser:(id:string|null)=>{userId=id;},unsupported:()=>{supported=false;}};
 }
 const tick=()=>new Promise(r=>setTimeout(r,10));
+function desktopSetup(initial: any = {}) {
+    const s = setup();
+    let sessions = initial, change: (() => void) | undefined;
+    s.api.metro.findByStoreName = (name: string) => name === "SessionsStore" ? {
+        getSessions: () => sessions,
+        addChangeListener: (fn: () => void) => { change = fn; },
+        removeChangeListener: (fn: () => void) => { if (change === fn) change = undefined; }
+    } : undefined;
+    return { ...s, sessions: (value: any) => { sessions = value; change?.(); }, listening: () => !!change };
+}
+const pc = (activities: any[] = [{application_id: "pc-app", type: 0}]) => ({pc: {status: "online", clientInfo: {client: "desktop"}, activities}});
+test("desktop activity prevents mobile publication and preserves selected profile", async () => {
+    const s = desktopSetup(pc()), r = createRuntime(s.api); r.start();
+    const p = createProfile(); await r.controller.applyProfile(p);
+    assert.equal(s.events.length, 0);
+    assert.equal(r.controller.getSnapshot().activeProfile?.id, p.id);
+    assert.match(r.controller.getSnapshot().message, /ПК имеет приоритет/);
+    assert.equal(s.api.plugin.storage.studioData.resumeEnabled, true);
+    r.stop(); assert.equal(s.listening(), false);
+});
+test("PC arrival clears only mobile socket, removal resumes saved activity without a loop", async () => {
+    const s = desktopSetup(), r = createRuntime(s.api); r.start();
+    await r.controller.applyProfile(createProfile()); const first = s.events[0].activity;
+    s.sessions(pc()); await tick();
+    assert.equal(s.events.at(-1).activity, null); assert.equal(s.events.at(-1).socketId, SOCKET_ID);
+    const count = s.events.length; s.sessions(pc()); await tick(); assert.equal(s.events.length, count);
+    s.sessions({}); await tick(); assert.deepEqual(s.events.at(-1).activity, first);
+    r.stop();
+});
+test("disable and logout while yielding cannot resurrect mobile presence", async () => {
+    for (const logout of [false, true]) {
+        const s = desktopSetup(pc()), r = createRuntime(s.api); r.start();
+        await r.controller.applyProfile(createProfile());
+        if (logout) { s.listeners.get("LOGOUT")!(); await tick(); } else r.controller.disable();
+        s.sessions({}); await tick(); assert.equal(s.events.length, 0);
+        assert.equal(r.controller.getSnapshot().activeProfile, null); r.stop();
+    }
+});
+test("mobile sessions, custom text status, and idle PC without activity do not block", async () => {
+    for (const sessions of [pc([]), pc([{type: 4, name: "custom"}]), {m: {...pc().pc, clientInfo: {client: "mobile"}}}, {pc: {...pc().pc, status: "offline"}}]) {
+        const s = desktopSetup(sessions), r = createRuntime(s.api); r.start();
+        await r.controller.applyProfile(createProfile()); assert.ok(s.events[0].activity); r.stop();
+    }
+});
+test("reconnect and foreground cannot override a running desktop activity", async () => {
+    const s = desktopSetup(pc()), r = createRuntime(s.api); r.start();
+    await r.controller.applyProfile(createProfile());
+    s.listeners.get("CONNECTION_OPEN")!(); await tick(); assert.equal(s.events.length, 0);
+    s.sessions({}); await tick(); assert.ok(s.events.at(-1).activity); r.stop();
+});
 test("silent activity rejection is detected without erasing saved profiles",async()=>{
     const s=setup(); s.api.metro.findByStoreName=()=>({getActivities:()=>[]});
     const r=createRuntime(s.api);r.start();await r.controller.applyProfile(createProfile());

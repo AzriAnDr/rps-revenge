@@ -1,4 +1,4 @@
-export const BUILD = "0.2.7";
+export const BUILD = "0.2.8";
 let presence = "not-applied";
 export function recordPresence(value: "not-applied" | "dispatched" | "local-confirmed" | "local-missing" | "verification-unavailable" | "cleared") { presence = value; }
 const components = new Set<string>();

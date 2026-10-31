@@ -292,7 +292,7 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.7";
+  var BUILD = "0.2.8";
   var presence = "not-applied";
   function recordPresence(value) {
     presence = value;
@@ -668,7 +668,7 @@
         }
         deps.publish(activity);
         lastPublishedAt = now();
-        update({ activeProfile: copyProfile(clean2), phase: "active", message: "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430 \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0443 Discord. \u0412\u0438\u0434\u0438\u043C\u043E\u0441\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u043C \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F\u043C \u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430.", ...environment() });
+        update({ activeProfile: copyProfile(clean2), phase: "active", message: deps.getPublishMessage?.() ?? "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430 \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0443 Discord. \u0412\u0438\u0434\u0438\u043C\u043E\u0441\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u043C \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F\u043C \u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430.", ...environment() });
         persist({ ...data, lastApplied: clean2, lastOwnerId: userId, resumeEnabled: true });
       } catch (error) {
         if (request !== generation || !running) return;
@@ -757,6 +757,9 @@
       reportRuntimeError(message) {
         update({ phase: "error", message });
       },
+      reportRuntimeMessage(message) {
+        update({ message });
+      },
       start() {
         load();
         if (running) return;
@@ -797,6 +800,10 @@
   function createRuntime(api) {
     const dispatcher = api.metro.common.FluxDispatcher;
     let lastActivity = null;
+    let desiredActivity = null;
+    let yieldingToDesktop = false;
+    let sessionStore;
+    let sessionListener;
     let installed = false;
     let timer;
     let verification;
@@ -805,7 +812,32 @@
     let appStateSubscription;
     const subscriptions = [];
     const user = () => api.metro.findByProps("getCurrentUser")?.getCurrentUser?.()?.id ?? null;
+    function desktopHasActivity() {
+      try {
+        const sessions = api.metro.findByStoreName?.("SessionsStore")?.getSessions?.();
+        if (!sessions || typeof sessions !== "object") return false;
+        return Object.values(sessions).some((session) => {
+          const client = session?.clientInfo?.client ?? session?.client_info?.client;
+          if (client !== "desktop" || session.status === "offline" || session.status === "invisible") return false;
+          return Array.isArray(session.activities) && session.activities.some((item) => typeof item?.application_id === "string" && item.application_id.length > 0 && item.type !== 4);
+        });
+      } catch {
+        return false;
+      }
+    }
+    const priorityMessage = () => yieldingToDesktop ? "\u0410\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C \u043D\u0430 \u041F\u041A \u0438\u043C\u0435\u0435\u0442 \u043F\u0440\u0438\u043E\u0440\u0438\u0442\u0435\u0442. \u0422\u0435\u043B\u0435\u0444\u043E\u043D \u043E\u0436\u0438\u0434\u0430\u0435\u0442; \u0432\u044B\u0431\u0440\u0430\u043D\u043D\u044B\u0439 \u043F\u0440\u043E\u0444\u0438\u043B\u044C \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D." : "\u041A\u0430\u0440\u0442\u043E\u0447\u043A\u0430 \u043F\u0435\u0440\u0435\u0434\u0430\u043D\u0430 \u043A\u043B\u0438\u0435\u043D\u0442\u0443 Discord. \u0412\u0438\u0434\u0438\u043C\u043E\u0441\u0442\u044C \u0434\u0440\u0443\u0433\u0438\u043C \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044F\u043C \u0435\u0449\u0451 \u043D\u0435 \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0430.";
     function publish(activity) {
+      desiredActivity = activity;
+      yieldingToDesktop = !!activity && desktopHasActivity();
+      const outgoing = yieldingToDesktop ? null : activity;
+      if (!outgoing && !lastActivity) {
+        recordPresence(yieldingToDesktop ? "desktop-priority" : "cleared");
+        return;
+      }
+      send(outgoing);
+      if (yieldingToDesktop) recordPresence("desktop-priority");
+    }
+    function send(activity) {
       const actions = api.metro.findByProps("SET_ACTIVITY");
       if (!actions?.SET_ACTIVITY || !dispatcher?.dispatch) {
         if (!activity && !lastActivity) return;
@@ -846,6 +878,7 @@
       getUserId: user,
       getSharingEnabled: () => true,
       getConflict: () => false,
+      getPublishMessage: priorityMessage,
       resolveAsset: async (appId, asset) => {
         const manager = api.metro.findByProps("fetchAssetIds");
         if (!manager?.fetchAssetIds) throw new Error("\u0412 \u044D\u0442\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438 Discord \u043D\u0435 \u043D\u0430\u0439\u0434\u0435\u043D \u043E\u0431\u0440\u0430\u0431\u043E\u0442\u0447\u0438\u043A \u043A\u0430\u0440\u0442\u0438\u043D\u043E\u043A Rich Presence.");
@@ -880,7 +913,13 @@
           if (logout2) controller.onLogout();
           else {
             controller.refreshEnvironment();
-            if (reconnect2 && lastActivity && controller.getSnapshot().activeProfile) publish(lastActivity);
+            if (desiredActivity && controller.getSnapshot().activeProfile) {
+              const shouldYield = desktopHasActivity();
+              if (reconnect2 || shouldYield !== yieldingToDesktop) {
+                publish(desiredActivity);
+                controller.reportRuntimeMessage(priorityMessage());
+              }
+            }
           }
         } catch (e) {
           error(e);
@@ -894,13 +933,17 @@
         installed = true;
         try {
           controller.start();
+          sessionStore = api.metro.findByStoreName?.("SessionsStore");
+          sessionListener = () => schedule(false, false);
+          sessionStore?.addChangeListener?.(sessionListener);
           appStateSubscription = api.metro.common.ReactNative?.AppState?.addEventListener?.("change", (state) => {
             if (state === "active" && controller.getSnapshot().restoreOnStart) schedule(false, true);
           });
           for (const [event, logout, reconnect] of [
             ["LOGOUT", true, false],
             ["CONNECTION_OPEN", false, true],
-            ["CURRENT_USER_UPDATE", false, false]
+            ["CURRENT_USER_UPDATE", false, false],
+            ["SESSIONS_REPLACE", false, false]
           ]) {
             const handler = () => schedule(logout, reconnect);
             dispatcher.subscribe(event, handler);
@@ -912,6 +955,9 @@
       },
       stop() {
         installed = false;
+        if (sessionListener) sessionStore?.removeChangeListener?.(sessionListener);
+        sessionListener = void 0;
+        sessionStore = void 0;
         appStateSubscription?.remove();
         appStateSubscription = void 0;
         if (timer !== void 0) clearTimeout(timer);

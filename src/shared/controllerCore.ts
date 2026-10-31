@@ -55,6 +55,7 @@ export interface StudioDependencies {
     getUserId(): string | null;
     getSharingEnabled(): boolean;
     getConflict(): boolean;
+    getPublishMessage?(): string;
     now?(): number;
 }
 
@@ -260,7 +261,7 @@ export function createStudioController(deps: StudioDependencies) {
             }
             deps.publish(activity);
             lastPublishedAt = now();
-            update({ activeProfile: copyProfile(clean), phase: "active", message: "Карточка передана клиенту Discord. Видимость другим пользователям ещё не подтверждена.", ...environment() });
+            update({ activeProfile: copyProfile(clean), phase: "active", message: deps.getPublishMessage?.() ?? "Карточка передана клиенту Discord. Видимость другим пользователям ещё не подтверждена.", ...environment() });
             persist({ ...data, lastApplied: clean, lastOwnerId: userId, resumeEnabled: true });
         } catch (error) {
             if (request !== generation || !running) return;
@@ -339,6 +340,9 @@ export function createStudioController(deps: StudioDependencies) {
         exportProfiles(): string { load(); return serializeProfiles(data.profiles); },
         reportRuntimeError(message: string) {
             update({ phase: "error", message });
+        },
+        reportRuntimeMessage(message: string) {
+            update({ message });
         },
         start() {
             load();
