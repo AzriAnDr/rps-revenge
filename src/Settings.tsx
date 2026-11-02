@@ -3,6 +3,8 @@ import { cloneProfile, createProfile, PresenceProfile } from "./shared/model";
 import { SyncPanel } from "./SyncPanel";
 import { BUILD, diagnosticReport } from "./diagnostics";
 import type { createMobileSync } from "./lanMobile";
+import { PresencePreview } from "./PresencePreview";
+import { createImageUploader } from "./imageUpload";
 
 declare const vendetta: any;
 const { React, ReactNative: RN } = vendetta.metro.common;
@@ -32,6 +34,29 @@ function Field({ label, value, onChange, placeholder = "", maxLength = 128, url 
 
 function copy(profile: PresenceProfile): PresenceProfile {
     return { ...profile, buttons: profile.buttons.map(button => ({ ...button })) };
+}
+
+function UploadButton({ title, onUploaded }: { title: string; onUploaded: (url: string) => void }) {
+    const [busy, setBusy] = React.useState(false);
+    const [status, setStatus] = React.useState("");
+    const mounted = React.useRef(true);
+    const pending = React.useRef(false);
+    React.useEffect(() => { mounted.current = true; return () => { mounted.current = false; }; }, []);
+    async function upload() {
+        if (pending.current) return;
+        pending.current = true; setBusy(true); setStatus("");
+        try {
+            const url = await createImageUploader(vendetta)();
+            if (mounted.current && url) { onUploaded(url); setStatus("Загружено. Сохрани или примени профиль."); }
+        } catch (error) {
+            if (mounted.current) setStatus(error instanceof Error ? error.message : String(error));
+        } finally {
+            pending.current = false;
+            if (mounted.current) setBusy(false);
+        }
+    }
+    return <View><Button title={busy ? "Выбор / загрузка…" : title} disabled={busy} onPress={() => void upload()} />
+        {!!status && <Text accessibilityLiveRegion="polite" selectable style={styles.hint}>{status}</Text>}</View>;
 }
 
 export function Settings({ controller, sync }: { controller: StudioController; sync?: ReturnType<typeof createMobileSync>; }) {
@@ -112,10 +137,13 @@ export function Settings({ controller, sync }: { controller: StudioController; s
         <View style={[styles.row, { marginTop: 8 }]}>{([[0, "Играет"], [2, "Слушает"], [3, "Смотрит"], [5, "Соревнуется"]] as const).map(([value, label]) =>
             <Button key={value} title={label} selected={draft.type === value} onPress={() => patch("type", value)} />)}</View>
         <Text style={styles.heading}>Изображения</Text>
+        <Text style={styles.hint}>Выбери PNG, JPEG, GIF или WebP с телефона. Файл станет публичным на Catbox или запасном img402, без регистрации. Не загружай личные изображения.</Text>
         <Text style={styles.hint}>Вставь прямую http(s)-ссылку на изображение или ключ Art Asset. Ссылка на страницу сайта не подойдёт.</Text>
         {field("largeImage", "Большое изображение: URL / ключ", 512, true)}
+        <UploadButton key={`${draft.id}-large`} title="Загрузить большую картинку" onUploaded={url => setDraft((current: PresenceProfile) => current.id === draft.id ? { ...current, largeImage: url } : current)} />
         {field("largeText", "Подпись большого изображения")}
         {field("smallImage", "Маленькое изображение: URL / ключ", 512, true)}
+        <UploadButton key={`${draft.id}-small`} title="Загрузить маленькую иконку" onUploaded={url => setDraft((current: PresenceProfile) => current.id === draft.id ? { ...current, smallImage: url } : current)} />
         {field("smallText", "Подпись маленького изображения")}
 
         <Text style={styles.heading}>Кнопки · максимум 2</Text>
@@ -129,6 +157,8 @@ export function Settings({ controller, sync }: { controller: StudioController; s
         <Text style={styles.heading}>Таймер</Text>
         <View style={styles.row}><Button title="Без таймера" selected={draft.timer === "none"} onPress={() => patch("timer", "none")} /><Button title="С момента применения" selected={draft.timer === "elapsed"} onPress={() => patch("timer", "elapsed")} /></View>
         {draft.type === 5 && <Text style={styles.hint}>Для типа «Соревнуется» таймер не отображается.</Text>}
+        <Text style={styles.heading}>Предпросмотр</Text>
+        <PresencePreview profile={draft} />
         <View style={[styles.row, { marginTop: 18 }]}>
             <Button title="Сохранить" onPress={() => void run(save)} />
             <Button title={snapshot.phase === "applying" ? "Применяется…" : "Применить"} selected disabled={snapshot.phase === "applying"} onPress={() => void run(async () => { const applied = copy(draft); await controller.applyProfile(applied); setBaseline(JSON.stringify(applied)); })} />

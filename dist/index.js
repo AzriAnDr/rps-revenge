@@ -71,9 +71,9 @@
       return (c === "x" ? r : r & 3 | 8).toString(16);
     });
   }
-  function utf8Bytes(text) {
+  function utf8Bytes(text2) {
     let size = 0;
-    for (const point of text) {
+    for (const point of text2) {
       const code = point.codePointAt(0);
       size += code <= 127 ? 1 : code <= 2047 ? 2 : code <= 65535 ? 3 : 4;
     }
@@ -222,13 +222,13 @@
     if (issues.length) throw new Error(`${issues[0].field}: ${issues[0].message}`);
     return profile;
   }
-  function parseImport(text, existingIds = []) {
-    if (text.length > MAX_IMPORT_BYTES || utf8Bytes(text) > MAX_IMPORT_BYTES) {
+  function parseImport(text2, existingIds = []) {
+    if (text2.length > MAX_IMPORT_BYTES || utf8Bytes(text2) > MAX_IMPORT_BYTES) {
       throw new Error("\u0424\u0430\u0439\u043B \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439 \u0434\u043E\u043B\u0436\u0435\u043D \u0431\u044B\u0442\u044C \u043D\u0435 \u0431\u043E\u043B\u044C\u0448\u0435 1 \u041C\u0438\u0411.");
     }
     let parsed;
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(text2);
     } catch {
       throw new Error("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C JSON. \u0412\u044B\u0431\u0435\u0440\u0438\u0442\u0435 \u0444\u0430\u0439\u043B \u044D\u043A\u0441\u043F\u043E\u0440\u0442\u0430 Rich Presence Studio.");
     }
@@ -292,7 +292,7 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.8";
+  var BUILD = "0.2.9";
   var presence = "not-applied";
   function recordPresence(value) {
     presence = value;
@@ -315,9 +315,100 @@
     return JSON.stringify({ build: BUILD, hooks, matches, presence, components: [...components] }, null, 2);
   }
 
-  // src/Settings.tsx
+  // src/PresencePreview.tsx
   var { React: React2, ReactNative: RN2 } = vendetta.metro.common;
-  var { ScrollView, Text, TextInput, Pressable, Switch, View, Alert } = RN2;
+  var { View, Text, Image } = RN2;
+  var typeNames = { 0: "\u0418\u0433\u0440\u0430\u0435\u0442", 2: "\u0421\u043B\u0443\u0448\u0430\u0435\u0442", 3: "\u0421\u043C\u043E\u0442\u0440\u0438\u0442", 5: "\u0421\u043E\u0440\u0435\u0432\u043D\u0443\u0435\u0442\u0441\u044F" };
+  var text = { color: "#f3f4fa", fontSize: 14 };
+  function Picture({ value, small = false, label }) {
+    const [failed, setFailed] = React2.useState(false);
+    React2.useEffect(() => setFailed(false), [value]);
+    const external = /^https?:\/\//i.test(value);
+    const size = small ? 28 : 76;
+    return /* @__PURE__ */ React2.createElement(View, { accessibilityLabel: label, style: { width: size, height: size, borderRadius: small ? 14 : 10, backgroundColor: "#353844", alignItems: "center", justifyContent: "center", overflow: "hidden", ...small ? { position: "absolute", right: -4, bottom: -4, borderWidth: 3, borderColor: "#252730" } : {} } }, external && !failed ? /* @__PURE__ */ React2.createElement(Image, { source: { uri: value }, resizeMode: "cover", style: { width: size, height: size }, onError: () => setFailed(true) }) : /* @__PURE__ */ React2.createElement(Text, { style: { color: "#aeb8ff", fontSize: small ? 14 : 20 } }, value && !external ? "ASSET" : "\u2726"));
+  }
+  function PresencePreview({ profile }) {
+    const invalid = new Set(validateProfile(profile).map((issue) => issue.field));
+    return /* @__PURE__ */ React2.createElement(View, { accessibilityLabel: "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438", style: { backgroundColor: "#252730", borderRadius: 12, padding: 14, marginBottom: 16 } }, /* @__PURE__ */ React2.createElement(Text, { style: [text, { fontWeight: "700", marginBottom: 12 }] }, typeNames[profile.type]), /* @__PURE__ */ React2.createElement(View, { style: { flexDirection: "row", alignItems: "center" } }, /* @__PURE__ */ React2.createElement(View, { style: { marginRight: 16, marginBottom: 5 } }, /* @__PURE__ */ React2.createElement(Picture, { value: invalid.has("largeImage") ? "" : profile.largeImage.trim(), label: profile.largeText || "\u0411\u043E\u043B\u044C\u0448\u0430\u044F \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0430" }), !!profile.smallImage && /* @__PURE__ */ React2.createElement(Picture, { value: invalid.has("smallImage") ? "" : profile.smallImage.trim(), label: profile.smallText || "\u041C\u0430\u043B\u0435\u043D\u044C\u043A\u0430\u044F \u0438\u043A\u043E\u043D\u043A\u0430", small: true })), /* @__PURE__ */ React2.createElement(View, { style: { flex: 1, minWidth: 0 } }, /* @__PURE__ */ React2.createElement(Text, { style: [text, { fontWeight: "700" }] }, profile.name || "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438"), !!profile.details && /* @__PURE__ */ React2.createElement(Text, { style: text }, profile.details), !!profile.state && /* @__PURE__ */ React2.createElement(Text, { style: text }, profile.state), profile.timer === "elapsed" && profile.type !== 5 && /* @__PURE__ */ React2.createElement(Text, { style: [text, { color: "#b6bbce" }] }, "\u25F7 00:00 \u0441 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u0438\u044F"))), profile.buttons.filter((button) => button.label).map((button, index) => /* @__PURE__ */ React2.createElement(View, { key: index, style: { backgroundColor: "#393c49", borderRadius: 6, padding: 10, marginTop: 8 } }, /* @__PURE__ */ React2.createElement(Text, { style: [text, { textAlign: "center" }] }, button.label))), /* @__PURE__ */ React2.createElement(Text, { style: { color: "#b6bbce", fontSize: 12, marginTop: 12 } }, "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440 \u0447\u0435\u0440\u043D\u043E\u0432\u0438\u043A\u0430. \u041A\u043B\u044E\u0447\u0438 Art Asset \u043E\u0442\u043C\u0435\u0447\u0435\u043D\u044B ASSET; \u043E\u0444\u043E\u0440\u043C\u043B\u0435\u043D\u0438\u0435 \u0438 \u0430\u043D\u0438\u043C\u0430\u0446\u0438\u044F GIF \u0432 Discord \u043C\u043E\u0433\u0443\u0442 \u043E\u0442\u043B\u0438\u0447\u0430\u0442\u044C\u0441\u044F."));
+  }
+
+  // src/imageUpload.ts
+  var MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+  var MIME_EXTENSIONS = { "image/png": "png", "image/jpeg": "jpg", "image/gif": "gif", "image/webp": "webp" };
+  var MIME_TYPES = Object.keys(MIME_EXTENSIONS);
+  function providerUrl(provider, text2, size) {
+    if (text2.length > 16384) throw new Error("\u0421\u043B\u0438\u0448\u043A\u043E\u043C \u0431\u043E\u043B\u044C\u0448\u043E\u0439 \u043E\u0442\u0432\u0435\u0442 \u0445\u043E\u0441\u0442\u0438\u043D\u0433\u0430.");
+    if (provider === "Catbox") {
+      const url = text2.trim();
+      if (!/^https:\/\/files\.catbox\.moe\/[a-zA-Z0-9]+\.(png|jpe?g|gif|webp)$/.test(url)) throw new Error("Catbox \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B \u043F\u0440\u044F\u043C\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443.");
+      return url;
+    }
+    const value = JSON.parse(text2);
+    if (!value || typeof value.url !== "string" || !/^https:\/\/i\.img402\.dev\/[a-zA-Z0-9_-]+\.(png|jpe?g|gif|webp)$/.test(value.url)) throw new Error("img402 \u043D\u0435 \u0432\u0435\u0440\u043D\u0443\u043B \u043F\u0440\u044F\u043C\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443.");
+    if (size <= 1e6 && value.expiresAt !== null) throw new Error("img402 \u043E\u0433\u0440\u0430\u043D\u0438\u0447\u0438\u043B \u0441\u0440\u043E\u043A \u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F \u043C\u0430\u043B\u0435\u043D\u044C\u043A\u043E\u0439 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438.");
+    if (size > 1e6 && value.expiresAt !== null && (typeof value.expiresAt !== "string" || !Number.isFinite(Date.parse(value.expiresAt)) || Date.parse(value.expiresAt) < Date.now() + 29 * 864e5)) throw new Error("img402 \u0432\u0435\u0440\u043D\u0443\u043B \u0441\u043B\u0438\u0448\u043A\u043E\u043C \u043A\u043E\u0440\u043E\u0442\u043A\u0438\u0439 \u0441\u0440\u043E\u043A \u0445\u0440\u0430\u043D\u0435\u043D\u0438\u044F.");
+    return value.url;
+  }
+  async function pickImage(api) {
+    const find = (...props) => api.metro.findByProps(...props);
+    const picker = find("pickSingle", "isCancel") ?? find("pick", "saveDocuments");
+    const cropPicker = picker ? void 0 : find("openPicker");
+    if (!picker && !cropPicker) throw new Error("\u0412 \u044D\u0442\u043E\u0439 \u0432\u0435\u0440\u0441\u0438\u0438 Discord \u043D\u0435\u0434\u043E\u0441\u0442\u0443\u043F\u0435\u043D \u0432\u044B\u0431\u043E\u0440 \u0444\u0430\u0439\u043B\u0430. \u0412\u0441\u0442\u0430\u0432\u044C \u043F\u0440\u044F\u043C\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443 \u0432\u0440\u0443\u0447\u043D\u0443\u044E.");
+    try {
+      const result = picker ? await (picker.pickSingle ?? picker.pick).call(picker, { type: MIME_TYPES, allowMultiSelection: false, mode: "import" }) : await cropPicker.openPicker({ mediaType: "photo", multiple: false, cropping: false, includeBase64: false });
+      if (result == null || Array.isArray(result) && result.length === 0) return null;
+      if (Array.isArray(result) && result.length !== 1) throw new Error("\u0412\u044B\u0431\u0435\u0440\u0438 \u043E\u0434\u043D\u0443 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443.");
+      return Array.isArray(result) ? result[0] : result;
+    } catch (error) {
+      if (picker?.isCancel?.(error) || ["DOCUMENT_PICKER_CANCELED", "OPERATION_CANCELED", "E_PICKER_CANCELLED"].includes(error?.code)) return null;
+      throw error;
+    }
+  }
+  function createImageUploader(api, options = {}) {
+    return async () => {
+      const image = await pickImage(api);
+      if (!image) return null;
+      if (image.error || image.isVirtual) throw new Error("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438.");
+      const uri = image.fileCopyUri || image.uri || image.path;
+      const mime = image.type ?? image.mime;
+      const extension = typeof mime === "string" && MIME_TYPES.includes(mime.toLowerCase()) ? MIME_EXTENSIONS[mime.toLowerCase()] : void 0;
+      if (!extension) throw new Error("\u041F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u044E\u0442\u0441\u044F PNG, JPEG, GIF \u0438 WebP. SVG \u0438 \u0434\u0440\u0443\u0433\u0438\u0435 \u0444\u0430\u0439\u043B\u044B \u043D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0430\u044E\u0442\u0441\u044F.");
+      if (!Number.isSafeInteger(image.size) || image.size < 1 || image.size > MAX_IMAGE_BYTES) throw new Error("\u0412\u044B\u0431\u0435\u0440\u0438 \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443 \u0441 \u0438\u0437\u0432\u0435\u0441\u0442\u043D\u044B\u043C \u0440\u0430\u0437\u043C\u0435\u0440\u043E\u043C \u043E\u0442 1 \u0431\u0430\u0439\u0442\u0430 \u0434\u043E 10 \u041C\u0438\u0411.");
+      if (typeof uri !== "string" || !/^(content:\/\/.+|file:\/\/\/.+|\/.+)$/.test(uri) || /[\r\n\0]/.test(uri)) throw new Error("\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043F\u0440\u043E\u0447\u0438\u0442\u0430\u0442\u044C \u043B\u043E\u043A\u0430\u043B\u044C\u043D\u044B\u0439 \u0444\u0430\u0439\u043B \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0438.");
+      const fileUri = uri.startsWith("/") ? `file://${uri}` : uri;
+      const errors = [];
+      for (const provider of ["Catbox", "img402"]) {
+        const abort = new AbortController();
+        let timer;
+        try {
+          if (provider === "img402" && image.size > 1e7) throw new Error("\u0417\u0430\u043F\u0430\u0441\u043D\u043E\u0439 \u0445\u043E\u0441\u0442\u0438\u043D\u0433 \u043F\u0440\u0438\u043D\u0438\u043C\u0430\u0435\u0442 \u0434\u043E 10 000 000 \u0431\u0430\u0439\u0442.");
+          const body = new FormData();
+          if (provider === "Catbox") body.append("reqtype", "fileupload");
+          body.append(provider === "Catbox" ? "fileToUpload" : "image", { uri: fileUri, type: mime.toLowerCase(), name: `presence.${extension}` });
+          const upload = async () => {
+            const response = await fetch(provider === "Catbox" ? "https://catbox.moe/user/api.php" : "https://img402.dev/api/free", { method: "POST", body, signal: abort.signal, redirect: "error" });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            return providerUrl(provider, await response.text(), image.size);
+          };
+          return await Promise.race([upload(), new Promise((_, reject) => {
+            timer = setTimeout(() => {
+              abort.abort();
+              reject(new Error("\u0425\u043E\u0441\u0442\u0438\u043D\u0433 \u043D\u0435 \u043E\u0442\u0432\u0435\u0442\u0438\u043B \u0437\u0430 30 \u0441\u0435\u043A\u0443\u043D\u0434."));
+            }, options.timeoutMs ?? 3e4);
+          })]);
+        } catch (error) {
+          errors.push(`${provider}: ${error instanceof Error ? error.message : "\u041E\u0448\u0438\u0431\u043A\u0430 \u0441\u0435\u0442\u0438"}`);
+        } finally {
+          if (timer !== void 0) clearTimeout(timer);
+        }
+      }
+      throw new Error(`\u041D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u0437\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443. ${errors.join("; ")}. \u041F\u043E\u0441\u043B\u0435 \u0441\u0435\u0442\u0435\u0432\u043E\u0433\u043E \u0441\u0431\u043E\u044F \u0444\u0430\u0439\u043B \u043C\u043E\u0433 \u0441\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C\u0441\u044F \u043D\u0430 \u0445\u043E\u0441\u0442\u0438\u043D\u0433\u0435. \u041C\u043E\u0436\u043D\u043E \u043F\u043E\u0432\u0442\u043E\u0440\u0438\u0442\u044C \u043F\u043E\u0437\u0436\u0435 \u0438\u043B\u0438 \u0432\u0441\u0442\u0430\u0432\u0438\u0442\u044C \u043F\u0440\u044F\u043C\u0443\u044E \u0441\u0441\u044B\u043B\u043A\u0443.`);
+    };
+  }
+
+  // src/Settings.tsx
+  var { React: React3, ReactNative: RN3 } = vendetta.metro.common;
+  var { ScrollView, Text: Text2, TextInput, Pressable, Switch, View: View2, Alert } = RN3;
   var colors = { background: "#17181d", panel: "#252730", text: "#f3f4fa", muted: "#b6bbce", accent: "#6476ee", error: "#ffacb5" };
   var styles = {
     heading: { color: colors.text, fontSize: 20, fontWeight: "700", marginTop: 20, marginBottom: 10 },
@@ -327,7 +418,7 @@
     input: { color: colors.text, backgroundColor: colors.panel, borderColor: "#535869", borderWidth: 1, borderRadius: 8, padding: 12, fontSize: 16, marginTop: 6, marginBottom: 12 }
   };
   function Button({ title, onPress, selected = false, disabled = false, danger = false }) {
-    return /* @__PURE__ */ React2.createElement(
+    return /* @__PURE__ */ React3.createElement(
       Pressable,
       {
         accessibilityRole: "button",
@@ -337,11 +428,11 @@
         onPress,
         style: { minHeight: 46, justifyContent: "center", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 8, marginRight: 8, marginBottom: 8, backgroundColor: selected ? colors.accent : colors.panel, opacity: disabled ? 0.45 : 1 }
       },
-      /* @__PURE__ */ React2.createElement(Text, { style: { color: danger ? colors.error : colors.text, fontSize: 15 } }, title)
+      /* @__PURE__ */ React3.createElement(Text2, { style: { color: danger ? colors.error : colors.text, fontSize: 15 } }, title)
     );
   }
   function Field({ label, value, onChange, placeholder = "", maxLength = 128, url = false, multiline = false }) {
-    return /* @__PURE__ */ React2.createElement(View, null, /* @__PURE__ */ React2.createElement(Text, { style: styles.text }, label), /* @__PURE__ */ React2.createElement(
+    return /* @__PURE__ */ React3.createElement(View2, null, /* @__PURE__ */ React3.createElement(Text2, { style: styles.text }, label), /* @__PURE__ */ React3.createElement(
       TextInput,
       {
         accessibilityLabel: label,
@@ -362,21 +453,52 @@
   function copy(profile) {
     return { ...profile, buttons: profile.buttons.map((button) => ({ ...button })) };
   }
+  function UploadButton({ title, onUploaded }) {
+    const [busy, setBusy] = React3.useState(false);
+    const [status, setStatus] = React3.useState("");
+    const mounted = React3.useRef(true);
+    const pending = React3.useRef(false);
+    React3.useEffect(() => {
+      mounted.current = true;
+      return () => {
+        mounted.current = false;
+      };
+    }, []);
+    async function upload() {
+      if (pending.current) return;
+      pending.current = true;
+      setBusy(true);
+      setStatus("");
+      try {
+        const url = await createImageUploader(vendetta)();
+        if (mounted.current && url) {
+          onUploaded(url);
+          setStatus("\u0417\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u043E. \u0421\u043E\u0445\u0440\u0430\u043D\u0438 \u0438\u043B\u0438 \u043F\u0440\u0438\u043C\u0435\u043D\u0438 \u043F\u0440\u043E\u0444\u0438\u043B\u044C.");
+        }
+      } catch (error) {
+        if (mounted.current) setStatus(error instanceof Error ? error.message : String(error));
+      } finally {
+        pending.current = false;
+        if (mounted.current) setBusy(false);
+      }
+    }
+    return /* @__PURE__ */ React3.createElement(View2, null, /* @__PURE__ */ React3.createElement(Button, { title: busy ? "\u0412\u044B\u0431\u043E\u0440 / \u0437\u0430\u0433\u0440\u0443\u0437\u043A\u0430\u2026" : title, disabled: busy, onPress: () => void upload() }), !!status && /* @__PURE__ */ React3.createElement(Text2, { accessibilityLiveRegion: "polite", selectable: true, style: styles.hint }, status));
+  }
   function Settings({ controller, sync: sync2 }) {
-    const [snapshot, setSnapshot] = React2.useState(() => controller.getSnapshot());
-    const [draft, setDraft] = React2.useState(() => copy(controller.getSnapshot().profiles[0] ?? createProfile()));
-    const [baseline, setBaseline] = React2.useState(() => JSON.stringify(draft));
-    const [error, setError] = React2.useState("");
-    const [notice, setNotice] = React2.useState("");
-    const [json, setJson] = React2.useState("");
+    const [snapshot, setSnapshot] = React3.useState(() => controller.getSnapshot());
+    const [draft, setDraft] = React3.useState(() => copy(controller.getSnapshot().profiles[0] ?? createProfile()));
+    const [baseline, setBaseline] = React3.useState(() => JSON.stringify(draft));
+    const [error, setError] = React3.useState("");
+    const [notice, setNotice] = React3.useState("");
+    const [json, setJson] = React3.useState("");
     const dirty = JSON.stringify(draft) !== baseline;
-    React2.useEffect(() => {
+    React3.useEffect(() => {
       const refresh = () => setSnapshot(controller.getSnapshot());
       const unsubscribe = controller.subscribe(refresh);
       refresh();
       return unsubscribe;
     }, [controller]);
-    React2.useEffect(() => {
+    React3.useEffect(() => {
       const current = snapshot.profiles.find((profile) => profile.id === draft.id);
       if (JSON.stringify(draft) !== baseline) return;
       if (current && JSON.stringify(current) !== baseline) {
@@ -420,11 +542,11 @@
       controller.saveProfile(draft);
       setBaseline(JSON.stringify(draft));
     }
-    const field = (key, label, maxLength = 128, url = false, placeholder = "") => /* @__PURE__ */ React2.createElement(Field, { label, value: draft[key], onChange: (value) => patch(key, value), maxLength, url, placeholder });
-    return /* @__PURE__ */ React2.createElement(ScrollView, { style: { backgroundColor: colors.background }, contentContainerStyle: { padding: 18, paddingBottom: 60 }, keyboardShouldPersistTaps: "handled" }, /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "Rich Presence Studio"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0421\u0431\u043E\u0440\u043A\u0430 ", BUILD), /* @__PURE__ */ React2.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 RPS", onPress: () => void run(() => {
+    const field = (key, label, maxLength = 128, url = false, placeholder = "") => /* @__PURE__ */ React3.createElement(Field, { label, value: draft[key], onChange: (value) => patch(key, value), maxLength, url, placeholder });
+    return /* @__PURE__ */ React3.createElement(ScrollView, { style: { backgroundColor: colors.background }, contentContainerStyle: { padding: 18, paddingBottom: 60 }, keyboardShouldPersistTaps: "handled" }, /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "Rich Presence Studio"), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u0421\u0431\u043E\u0440\u043A\u0430 ", BUILD), /* @__PURE__ */ React3.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u0434\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0443 RPS", onPress: () => void run(() => {
       vendetta.metro.common.clipboard.setString(diagnosticReport());
       setNotice("\u0414\u0438\u0430\u0433\u043D\u043E\u0441\u0442\u0438\u043A\u0430 \u0441\u043A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u043D\u0430. \u0412 \u043D\u0435\u0439 \u0432\u0435\u0440\u0441\u0438\u044F, \u043D\u0430\u0437\u0432\u0430\u043D\u0438\u044F \u043A\u043E\u043C\u043F\u043E\u043D\u0435\u043D\u0442\u043E\u0432 \u0438 \u044D\u0442\u0430\u043F \u043E\u0442\u043F\u0440\u0430\u0432\u043A\u0438; \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439 \u0438 \u043A\u043E\u0434\u043E\u0432 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0438\u044F \u043D\u0435\u0442.");
-    }) }), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u041F\u0440\u043E\u0444\u0438\u043B\u0438 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435. \u041C\u043E\u0436\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044E \u043F\u043E Wi-Fi \u0438\u043B\u0438 \u043F\u0435\u0440\u0435\u043D\u043E\u0441\u0438\u0442\u044C JSON \u0432\u0440\u0443\u0447\u043D\u0443\u044E."), sync2 && /* @__PURE__ */ React2.createElement(SyncPanel, { sync: sync2 }), /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: { color: snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, snapshot.message), !!error && /* @__PURE__ */ React2.createElement(Text, { accessibilityRole: "alert", accessibilityLiveRegion: "assertive", selectable: true, style: { color: colors.error, marginBottom: 12 } }, error), !!notice && /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", style: styles.hint }, notice), !snapshot.sharingEnabled && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041F\u043E\u043A\u0430\u0437 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438 \u0432 Discord \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438\u043B\u0438 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438\u0442\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043E\u043D\u0444\u0438\u0434\u0435\u043D\u0446\u0438\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u0438 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438."), snapshot.conflict && /* @__PURE__ */ React2.createElement(Text, { style: { color: colors.error, marginBottom: 12 } }, "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u0430 \u0434\u0440\u0443\u0433\u0430\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0430\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C. \u041E\u0442\u043A\u043B\u044E\u0447\u0438 \u0435\u0451, \u0435\u0441\u043B\u0438 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u0443\u044E\u0442."), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438"), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, snapshot.profiles.map((profile) => /* @__PURE__ */ React2.createElement(
+    }) }), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u041F\u0440\u043E\u0444\u0438\u043B\u0438 \u0445\u0440\u0430\u043D\u044F\u0442\u0441\u044F \u043D\u0430 \u044D\u0442\u043E\u043C \u0443\u0441\u0442\u0440\u043E\u0439\u0441\u0442\u0432\u0435. \u041C\u043E\u0436\u043D\u043E \u0432\u043A\u043B\u044E\u0447\u0438\u0442\u044C \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044E \u043F\u043E Wi-Fi \u0438\u043B\u0438 \u043F\u0435\u0440\u0435\u043D\u043E\u0441\u0438\u0442\u044C JSON \u0432\u0440\u0443\u0447\u043D\u0443\u044E."), sync2 && /* @__PURE__ */ React3.createElement(SyncPanel, { sync: sync2 }), /* @__PURE__ */ React3.createElement(Text2, { accessibilityLiveRegion: "polite", style: { color: snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, snapshot.message), !!error && /* @__PURE__ */ React3.createElement(Text2, { accessibilityRole: "alert", accessibilityLiveRegion: "assertive", selectable: true, style: { color: colors.error, marginBottom: 12 } }, error), !!notice && /* @__PURE__ */ React3.createElement(Text2, { accessibilityLiveRegion: "polite", style: styles.hint }, notice), !snapshot.sharingEnabled && /* @__PURE__ */ React3.createElement(Text2, { style: { color: colors.error, marginBottom: 12 } }, "\u041F\u043E\u043A\u0430\u0437 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438 \u0432 Discord \u0432\u044B\u043A\u043B\u044E\u0447\u0435\u043D \u0438\u043B\u0438 \u0435\u0433\u043E \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0443 \u043D\u0435 \u0443\u0434\u0430\u043B\u043E\u0441\u044C \u043E\u043F\u0440\u0435\u0434\u0435\u043B\u0438\u0442\u044C. \u041F\u0440\u043E\u0432\u0435\u0440\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 \u043A\u043E\u043D\u0444\u0438\u0434\u0435\u043D\u0446\u0438\u0430\u043B\u044C\u043D\u043E\u0441\u0442\u0438 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438."), snapshot.conflict && /* @__PURE__ */ React3.createElement(Text2, { style: { color: colors.error, marginBottom: 12 } }, "\u041E\u0431\u043D\u0430\u0440\u0443\u0436\u0435\u043D\u0430 \u0434\u0440\u0443\u0433\u0430\u044F \u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u0442\u0435\u043B\u044C\u0441\u043A\u0430\u044F \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C. \u041E\u0442\u043A\u043B\u044E\u0447\u0438 \u0435\u0451, \u0435\u0441\u043B\u0438 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0438 \u043A\u043E\u043D\u0444\u043B\u0438\u043A\u0442\u0443\u044E\u0442."), /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "\u0421\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438"), /* @__PURE__ */ React3.createElement(View2, { style: styles.row }, snapshot.profiles.map((profile) => /* @__PURE__ */ React3.createElement(
       Button,
       {
         key: profile.id,
@@ -434,24 +556,24 @@
           if (profile.id !== draft.id) replaceDraft(() => select(profile));
         }
       }
-    ))), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, /* @__PURE__ */ React2.createElement(Button, { title: "\u041D\u043E\u0432\u044B\u0439", onPress: () => replaceDraft(() => select(createProfile())) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u0414\u0443\u0431\u043B\u0438\u0440\u043E\u0432\u0430\u0442\u044C", onPress: () => void run(() => {
+    ))), /* @__PURE__ */ React3.createElement(View2, { style: styles.row }, /* @__PURE__ */ React3.createElement(Button, { title: "\u041D\u043E\u0432\u044B\u0439", onPress: () => replaceDraft(() => select(createProfile())) }), /* @__PURE__ */ React3.createElement(Button, { title: "\u0414\u0443\u0431\u043B\u0438\u0440\u043E\u0432\u0430\u0442\u044C", onPress: () => void run(() => {
       const next = cloneProfile(draft);
       controller.saveProfile(next);
       select(next);
-    }) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", danger: true, disabled: !snapshot.profiles.some((profile) => profile.id === draft.id), onPress: () => Alert.alert("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u0440\u043E\u0444\u0438\u043B\u044C?", `\xAB${draft.label}\xBB \u0431\u0443\u0434\u0435\u0442 \u0443\u0434\u0430\u043B\u0451\u043D. \u0415\u0441\u043B\u0438 \u043E\u043D \u0430\u043A\u0442\u0438\u0432\u0435\u043D, \u043F\u043E\u043A\u0430\u0437 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F.`, [
+    }) }), /* @__PURE__ */ React3.createElement(Button, { title: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", danger: true, disabled: !snapshot.profiles.some((profile) => profile.id === draft.id), onPress: () => Alert.alert("\u0423\u0434\u0430\u043B\u0438\u0442\u044C \u043F\u0440\u043E\u0444\u0438\u043B\u044C?", `\xAB${draft.label}\xBB \u0431\u0443\u0434\u0435\u0442 \u0443\u0434\u0430\u043B\u0451\u043D. \u0415\u0441\u043B\u0438 \u043E\u043D \u0430\u043A\u0442\u0438\u0432\u0435\u043D, \u043F\u043E\u043A\u0430\u0437 \u0432\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u0441\u044F.`, [
       { text: "\u041E\u0442\u043C\u0435\u043D\u0430", style: "cancel" },
       { text: "\u0423\u0434\u0430\u043B\u0438\u0442\u044C", style: "destructive", onPress: () => void run(() => {
         controller.removeProfile(draft.id);
         select(controller.getSnapshot().profiles[0] ?? createProfile());
       }) }
-    ]) })), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440", dirty ? " \xB7 \u0435\u0441\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F" : ""), field("label", "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F", 60), field("name", "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438"), field("details", "\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438"), field("state", "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435"), field("applicationId", "Application ID", 21, true, "\u041F\u0443\u0441\u0442\u043E\u0435 \u043F\u043E\u043B\u0435 \u2014 \u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439 ID \u0443\u0436\u0435 \u0437\u0430\u0434\u0430\u043D \u0432 \u043D\u043E\u0432\u043E\u043C \u043F\u0440\u043E\u0444\u0438\u043B\u0435. \u0414\u043B\u044F \u0441\u0432\u043E\u0438\u0445 Art Assets \u0443\u043A\u0430\u0436\u0438 ID \u0441\u0432\u043E\u0435\u0433\u043E \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F."), /* @__PURE__ */ React2.createElement(Text, { style: styles.text }, "\u0422\u0438\u043F \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438"), /* @__PURE__ */ React2.createElement(View, { style: [styles.row, { marginTop: 8 }] }, [[0, "\u0418\u0433\u0440\u0430\u0435\u0442"], [2, "\u0421\u043B\u0443\u0448\u0430\u0435\u0442"], [3, "\u0421\u043C\u043E\u0442\u0440\u0438\u0442"], [5, "\u0421\u043E\u0440\u0435\u0432\u043D\u0443\u0435\u0442\u0441\u044F"]].map(([value, label]) => /* @__PURE__ */ React2.createElement(Button, { key: value, title: label, selected: draft.type === value, onPress: () => patch("type", value) }))), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0412\u0441\u0442\u0430\u0432\u044C \u043F\u0440\u044F\u043C\u0443\u044E http(s)-\u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0438\u043B\u0438 \u043A\u043B\u044E\u0447 Art Asset. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443 \u0441\u0430\u0439\u0442\u0430 \u043D\u0435 \u043F\u043E\u0434\u043E\u0439\u0434\u0451\u0442."), field("largeImage", "\u0411\u043E\u043B\u044C\u0448\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: URL / \u043A\u043B\u044E\u0447", 512, true), field("largeText", "\u041F\u043E\u0434\u043F\u0438\u0441\u044C \u0431\u043E\u043B\u044C\u0448\u043E\u0433\u043E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F"), field("smallImage", "\u041C\u0430\u043B\u0435\u043D\u044C\u043A\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: URL / \u043A\u043B\u044E\u0447", 512, true), field("smallText", "\u041F\u043E\u0434\u043F\u0438\u0441\u044C \u043C\u0430\u043B\u0435\u043D\u044C\u043A\u043E\u0433\u043E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F"), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u041A\u043D\u043E\u043F\u043A\u0438 \xB7 \u043C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 2"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u041E\u0431\u044B\u0447\u043D\u044B\u0435 emoji \u043C\u043E\u0436\u043D\u043E \u0432\u0441\u0442\u0430\u0432\u043B\u044F\u0442\u044C \u043F\u0440\u044F\u043C\u043E \u0432 \u0442\u0435\u043A\u0441\u0442 \u043A\u043D\u043E\u043F\u043A\u0438. \u0417\u0430\u043F\u043E\u043B\u043D\u0438 \u0438 \u0442\u0435\u043A\u0441\u0442, \u0438 URL. \u0421\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0435 \u043A\u043D\u043E\u043F\u043A\u0438 Discord \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0442\u0435\u0431\u0435."), draft.buttons.map((button, index) => /* @__PURE__ */ React2.createElement(View, { key: index, style: { marginBottom: 12 } }, /* @__PURE__ */ React2.createElement(Field, { label: `\u041A\u043D\u043E\u043F\u043A\u0430 ${index + 1}: emoji \u0438 \u0442\u0435\u043A\u0441\u0442`, value: button.label, maxLength: 31, onChange: (value) => patch("buttons", draft.buttons.map((item, i) => i === index ? { ...item, label: value } : item)) }), /* @__PURE__ */ React2.createElement(Field, { label: `\u041A\u043D\u043E\u043F\u043A\u0430 ${index + 1}: URL`, value: button.url, maxLength: 512, url: true, onChange: (value) => patch("buttons", draft.buttons.map((item, i) => i === index ? { ...item, url: value } : item)) }), /* @__PURE__ */ React2.createElement(Button, { title: `\u0423\u0431\u0440\u0430\u0442\u044C \u043A\u043D\u043E\u043F\u043A\u0443 ${index + 1}`, danger: true, onPress: () => patch("buttons", draft.buttons.filter((_, i) => i !== index)) }))), /* @__PURE__ */ React2.createElement(Button, { title: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043A\u043D\u043E\u043F\u043A\u0443", disabled: draft.buttons.length >= 2, onPress: () => patch("buttons", [...draft.buttons, { label: "", url: "" }]) }), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u0422\u0430\u0439\u043C\u0435\u0440"), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, /* @__PURE__ */ React2.createElement(Button, { title: "\u0411\u0435\u0437 \u0442\u0430\u0439\u043C\u0435\u0440\u0430", selected: draft.timer === "none", onPress: () => patch("timer", "none") }), /* @__PURE__ */ React2.createElement(Button, { title: "\u0421 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u0438\u044F", selected: draft.timer === "elapsed", onPress: () => patch("timer", "elapsed") })), draft.type === 5 && /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0414\u043B\u044F \u0442\u0438\u043F\u0430 \xAB\u0421\u043E\u0440\u0435\u0432\u043D\u0443\u0435\u0442\u0441\u044F\xBB \u0442\u0430\u0439\u043C\u0435\u0440 \u043D\u0435 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u0442\u0441\u044F."), /* @__PURE__ */ React2.createElement(View, { style: [styles.row, { marginTop: 18 }] }, /* @__PURE__ */ React2.createElement(Button, { title: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C", onPress: () => void run(save) }), /* @__PURE__ */ React2.createElement(Button, { title: snapshot.phase === "applying" ? "\u041F\u0440\u0438\u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F\u2026" : "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C", selected: true, disabled: snapshot.phase === "applying", onPress: () => void run(async () => {
+    ]) })), /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "\u0420\u0435\u0434\u0430\u043A\u0442\u043E\u0440", dirty ? " \xB7 \u0435\u0441\u0442\u044C \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F" : ""), field("label", "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u044F", 60), field("name", "\u041D\u0430\u0437\u0432\u0430\u043D\u0438\u0435 \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438"), field("details", "\u041F\u043E\u0434\u0440\u043E\u0431\u043D\u043E\u0441\u0442\u0438"), field("state", "\u0421\u043E\u0441\u0442\u043E\u044F\u043D\u0438\u0435"), field("applicationId", "Application ID", 21, true, "\u041F\u0443\u0441\u0442\u043E\u0435 \u043F\u043E\u043B\u0435 \u2014 \u0441\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u043E\u0435 \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u0435"), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u0421\u0442\u0430\u043D\u0434\u0430\u0440\u0442\u043D\u044B\u0439 ID \u0443\u0436\u0435 \u0437\u0430\u0434\u0430\u043D \u0432 \u043D\u043E\u0432\u043E\u043C \u043F\u0440\u043E\u0444\u0438\u043B\u0435. \u0414\u043B\u044F \u0441\u0432\u043E\u0438\u0445 Art Assets \u0443\u043A\u0430\u0436\u0438 ID \u0441\u0432\u043E\u0435\u0433\u043E \u043F\u0440\u0438\u043B\u043E\u0436\u0435\u043D\u0438\u044F."), /* @__PURE__ */ React3.createElement(Text2, { style: styles.text }, "\u0422\u0438\u043F \u0430\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u0438"), /* @__PURE__ */ React3.createElement(View2, { style: [styles.row, { marginTop: 8 }] }, [[0, "\u0418\u0433\u0440\u0430\u0435\u0442"], [2, "\u0421\u043B\u0443\u0448\u0430\u0435\u0442"], [3, "\u0421\u043C\u043E\u0442\u0440\u0438\u0442"], [5, "\u0421\u043E\u0440\u0435\u0432\u043D\u0443\u0435\u0442\u0441\u044F"]].map(([value, label]) => /* @__PURE__ */ React3.createElement(Button, { key: value, title: label, selected: draft.type === value, onPress: () => patch("type", value) }))), /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "\u0418\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F"), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u0412\u044B\u0431\u0435\u0440\u0438 PNG, JPEG, GIF \u0438\u043B\u0438 WebP \u0441 \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430. \u0424\u0430\u0439\u043B \u0441\u0442\u0430\u043D\u0435\u0442 \u043F\u0443\u0431\u043B\u0438\u0447\u043D\u044B\u043C \u043D\u0430 Catbox \u0438\u043B\u0438 \u0437\u0430\u043F\u0430\u0441\u043D\u043E\u043C img402, \u0431\u0435\u0437 \u0440\u0435\u0433\u0438\u0441\u0442\u0440\u0430\u0446\u0438\u0438. \u041D\u0435 \u0437\u0430\u0433\u0440\u0443\u0436\u0430\u0439 \u043B\u0438\u0447\u043D\u044B\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F."), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u0412\u0441\u0442\u0430\u0432\u044C \u043F\u0440\u044F\u043C\u0443\u044E http(s)-\u0441\u0441\u044B\u043B\u043A\u0443 \u043D\u0430 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435 \u0438\u043B\u0438 \u043A\u043B\u044E\u0447 Art Asset. \u0421\u0441\u044B\u043B\u043A\u0430 \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443 \u0441\u0430\u0439\u0442\u0430 \u043D\u0435 \u043F\u043E\u0434\u043E\u0439\u0434\u0451\u0442."), field("largeImage", "\u0411\u043E\u043B\u044C\u0448\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: URL / \u043A\u043B\u044E\u0447", 512, true), /* @__PURE__ */ React3.createElement(UploadButton, { key: `${draft.id}-large`, title: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u0431\u043E\u043B\u044C\u0448\u0443\u044E \u043A\u0430\u0440\u0442\u0438\u043D\u043A\u0443", onUploaded: (url) => setDraft((current) => current.id === draft.id ? { ...current, largeImage: url } : current) }), field("largeText", "\u041F\u043E\u0434\u043F\u0438\u0441\u044C \u0431\u043E\u043B\u044C\u0448\u043E\u0433\u043E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F"), field("smallImage", "\u041C\u0430\u043B\u0435\u043D\u044C\u043A\u043E\u0435 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u0435: URL / \u043A\u043B\u044E\u0447", 512, true), /* @__PURE__ */ React3.createElement(UploadButton, { key: `${draft.id}-small`, title: "\u0417\u0430\u0433\u0440\u0443\u0437\u0438\u0442\u044C \u043C\u0430\u043B\u0435\u043D\u044C\u043A\u0443\u044E \u0438\u043A\u043E\u043D\u043A\u0443", onUploaded: (url) => setDraft((current) => current.id === draft.id ? { ...current, smallImage: url } : current) }), field("smallText", "\u041F\u043E\u0434\u043F\u0438\u0441\u044C \u043C\u0430\u043B\u0435\u043D\u044C\u043A\u043E\u0433\u043E \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F"), /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "\u041A\u043D\u043E\u043F\u043A\u0438 \xB7 \u043C\u0430\u043A\u0441\u0438\u043C\u0443\u043C 2"), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u041E\u0431\u044B\u0447\u043D\u044B\u0435 emoji \u043C\u043E\u0436\u043D\u043E \u0432\u0441\u0442\u0430\u0432\u043B\u044F\u0442\u044C \u043F\u0440\u044F\u043C\u043E \u0432 \u0442\u0435\u043A\u0441\u0442 \u043A\u043D\u043E\u043F\u043A\u0438. \u0417\u0430\u043F\u043E\u043B\u043D\u0438 \u0438 \u0442\u0435\u043A\u0441\u0442, \u0438 URL. \u0421\u043E\u0431\u0441\u0442\u0432\u0435\u043D\u043D\u044B\u0435 \u043A\u043D\u043E\u043F\u043A\u0438 Discord \u043C\u043E\u0436\u0435\u0442 \u043D\u0435 \u043F\u043E\u043A\u0430\u0437\u044B\u0432\u0430\u0442\u044C \u0442\u0435\u0431\u0435."), draft.buttons.map((button, index) => /* @__PURE__ */ React3.createElement(View2, { key: index, style: { marginBottom: 12 } }, /* @__PURE__ */ React3.createElement(Field, { label: `\u041A\u043D\u043E\u043F\u043A\u0430 ${index + 1}: emoji \u0438 \u0442\u0435\u043A\u0441\u0442`, value: button.label, maxLength: 31, onChange: (value) => patch("buttons", draft.buttons.map((item, i) => i === index ? { ...item, label: value } : item)) }), /* @__PURE__ */ React3.createElement(Field, { label: `\u041A\u043D\u043E\u043F\u043A\u0430 ${index + 1}: URL`, value: button.url, maxLength: 512, url: true, onChange: (value) => patch("buttons", draft.buttons.map((item, i) => i === index ? { ...item, url: value } : item)) }), /* @__PURE__ */ React3.createElement(Button, { title: `\u0423\u0431\u0440\u0430\u0442\u044C \u043A\u043D\u043E\u043F\u043A\u0443 ${index + 1}`, danger: true, onPress: () => patch("buttons", draft.buttons.filter((_, i) => i !== index)) }))), /* @__PURE__ */ React3.createElement(Button, { title: "\u0414\u043E\u0431\u0430\u0432\u0438\u0442\u044C \u043A\u043D\u043E\u043F\u043A\u0443", disabled: draft.buttons.length >= 2, onPress: () => patch("buttons", [...draft.buttons, { label: "", url: "" }]) }), /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "\u0422\u0430\u0439\u043C\u0435\u0440"), /* @__PURE__ */ React3.createElement(View2, { style: styles.row }, /* @__PURE__ */ React3.createElement(Button, { title: "\u0411\u0435\u0437 \u0442\u0430\u0439\u043C\u0435\u0440\u0430", selected: draft.timer === "none", onPress: () => patch("timer", "none") }), /* @__PURE__ */ React3.createElement(Button, { title: "\u0421 \u043C\u043E\u043C\u0435\u043D\u0442\u0430 \u043F\u0440\u0438\u043C\u0435\u043D\u0435\u043D\u0438\u044F", selected: draft.timer === "elapsed", onPress: () => patch("timer", "elapsed") })), draft.type === 5 && /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u0414\u043B\u044F \u0442\u0438\u043F\u0430 \xAB\u0421\u043E\u0440\u0435\u0432\u043D\u0443\u0435\u0442\u0441\u044F\xBB \u0442\u0430\u0439\u043C\u0435\u0440 \u043D\u0435 \u043E\u0442\u043E\u0431\u0440\u0430\u0436\u0430\u0435\u0442\u0441\u044F."), /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "\u041F\u0440\u0435\u0434\u043F\u0440\u043E\u0441\u043C\u043E\u0442\u0440"), /* @__PURE__ */ React3.createElement(PresencePreview, { profile: draft }), /* @__PURE__ */ React3.createElement(View2, { style: [styles.row, { marginTop: 18 }] }, /* @__PURE__ */ React3.createElement(Button, { title: "\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C", onPress: () => void run(save) }), /* @__PURE__ */ React3.createElement(Button, { title: snapshot.phase === "applying" ? "\u041F\u0440\u0438\u043C\u0435\u043D\u044F\u0435\u0442\u0441\u044F\u2026" : "\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C", selected: true, disabled: snapshot.phase === "applying", onPress: () => void run(async () => {
       const applied = copy(draft);
       await controller.applyProfile(applied);
       setBaseline(JSON.stringify(applied));
-    }) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u0412\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C", danger: true, onPress: () => void run(() => controller.disable()) })), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\xAB\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440. \xAB\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0432 Discord."), /* @__PURE__ */ React2.createElement(Text, { accessibilityLiveRegion: "polite", selectable: true, style: { color: error || snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, error || snapshot.message), /* @__PURE__ */ React2.createElement(View, { style: { flexDirection: "row", alignItems: "center", marginVertical: 12 } }, /* @__PURE__ */ React2.createElement(Text, { style: [styles.text, { flex: 1 }] }, "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443"), /* @__PURE__ */ React2.createElement(Switch, { accessibilityLabel: "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443", value: snapshot.restoreOnStart, onValueChange: (value) => void run(() => controller.setRestoreOnStart(value)) })), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0435\u0442 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u043F\u0440\u0438 \u0437\u0430\u043F\u0443\u0441\u043A\u0435 Discord \u0438 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D\u0438\u0438 \u0438\u0437 \u0444\u043E\u043D\u0430. \u0415\u0441\u043B\u0438 Android \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442 Discord, \u043F\u043B\u0430\u0433\u0438\u043D \u043D\u0435 \u0441\u043C\u043E\u0436\u0435\u0442 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0430\u0437 \u0434\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0433\u043E \u0437\u0430\u043F\u0443\u0441\u043A\u0430."), /* @__PURE__ */ React2.createElement(Text, { style: styles.heading }, "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439"), /* @__PURE__ */ React2.createElement(Text, { style: styles.hint }, "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u0418\u043C\u043F\u043E\u0440\u0442 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0440\u043E\u0444\u0438\u043B\u0438, \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044F \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0435."), /* @__PURE__ */ React2.createElement(Field, { label: "JSON \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439", value: json, onChange: setJson, multiline: true, url: true, maxLength: 1048577, placeholder: "\u0412\u0441\u0442\u0430\u0432\u044C JSON \u0441 \u041F\u041A \u0438\u043B\u0438 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430" }), /* @__PURE__ */ React2.createElement(View, { style: styles.row }, /* @__PURE__ */ React2.createElement(Button, { title: "\u0418\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C JSON", onPress: () => void run(() => {
+    }) }), /* @__PURE__ */ React3.createElement(Button, { title: "\u0412\u044B\u043A\u043B\u044E\u0447\u0438\u0442\u044C", danger: true, onPress: () => void run(() => controller.disable()) })), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\xAB\u0421\u043E\u0445\u0440\u0430\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0440\u0435\u0434\u0430\u043A\u0442\u043E\u0440. \xAB\u041F\u0440\u0438\u043C\u0435\u043D\u0438\u0442\u044C\xBB \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u0435\u0442 \u0438 \u043E\u0442\u043F\u0440\u0430\u0432\u043B\u044F\u0435\u0442 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u0432 Discord."), /* @__PURE__ */ React3.createElement(Text2, { accessibilityLiveRegion: "polite", selectable: true, style: { color: error || snapshot.phase === "error" ? colors.error : colors.text, marginBottom: 12 } }, error || snapshot.message), /* @__PURE__ */ React3.createElement(View2, { style: { flexDirection: "row", alignItems: "center", marginVertical: 12 } }, /* @__PURE__ */ React3.createElement(Text2, { style: [styles.text, { flex: 1 }] }, "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443"), /* @__PURE__ */ React3.createElement(Switch, { accessibilityLabel: "\u0410\u0432\u0442\u043E\u043C\u0430\u0442\u0438\u0447\u0435\u0441\u043A\u0438 \u0432\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0442\u044C \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443", value: snapshot.restoreOnStart, onValueChange: (value) => void run(() => controller.setRestoreOnStart(value)) })), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u0412\u043E\u0441\u0441\u0442\u0430\u043D\u0430\u0432\u043B\u0438\u0432\u0430\u0435\u0442 \u043A\u0430\u0440\u0442\u043E\u0447\u043A\u0443 \u043F\u0440\u0438 \u0437\u0430\u043F\u0443\u0441\u043A\u0435 Discord \u0438 \u0432\u043E\u0437\u0432\u0440\u0430\u0449\u0435\u043D\u0438\u0438 \u0438\u0437 \u0444\u043E\u043D\u0430. \u0415\u0441\u043B\u0438 Android \u043E\u0441\u0442\u0430\u043D\u043E\u0432\u0438\u0442 Discord, \u043F\u043B\u0430\u0433\u0438\u043D \u043D\u0435 \u0441\u043C\u043E\u0436\u0435\u0442 \u043F\u043E\u0434\u0434\u0435\u0440\u0436\u0438\u0432\u0430\u0442\u044C \u043F\u043E\u043A\u0430\u0437 \u0434\u043E \u0441\u043B\u0435\u0434\u0443\u044E\u0449\u0435\u0433\u043E \u0437\u0430\u043F\u0443\u0441\u043A\u0430."), /* @__PURE__ */ React3.createElement(Text2, { style: styles.heading }, "\u041F\u0435\u0440\u0435\u043D\u043E\u0441 \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439"), /* @__PURE__ */ React3.createElement(Text2, { style: styles.hint }, "\u042D\u043A\u0441\u043F\u043E\u0440\u0442 \u0441\u043E\u0434\u0435\u0440\u0436\u0438\u0442 \u0441\u043E\u0445\u0440\u0430\u043D\u0451\u043D\u043D\u044B\u0435 \u043F\u0440\u043E\u0444\u0438\u043B\u0438. \u0421\u043D\u0430\u0447\u0430\u043B\u0430 \u0441\u043E\u0445\u0440\u0430\u043D\u0438 \u0438\u0437\u043C\u0435\u043D\u0435\u043D\u0438\u044F. \u0418\u043C\u043F\u043E\u0440\u0442 \u0434\u043E\u0431\u0430\u0432\u043B\u044F\u0435\u0442 \u043F\u0440\u043E\u0444\u0438\u043B\u0438, \u0441\u043E\u0445\u0440\u0430\u043D\u044F\u044F \u0441\u0443\u0449\u0435\u0441\u0442\u0432\u0443\u044E\u0449\u0438\u0435."), /* @__PURE__ */ React3.createElement(Field, { label: "JSON \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439", value: json, onChange: setJson, multiline: true, url: true, maxLength: 1048577, placeholder: "\u0412\u0441\u0442\u0430\u0432\u044C JSON \u0441 \u041F\u041A \u0438\u043B\u0438 \u0434\u0440\u0443\u0433\u043E\u0433\u043E \u0442\u0435\u043B\u0435\u0444\u043E\u043D\u0430" }), /* @__PURE__ */ React3.createElement(View2, { style: styles.row }, /* @__PURE__ */ React3.createElement(Button, { title: "\u0418\u043C\u043F\u043E\u0440\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C JSON", onPress: () => void run(() => {
       controller.importProfiles(json);
       setNotice("\u041F\u0440\u043E\u0444\u0438\u043B\u0438 \u0434\u043E\u0431\u0430\u0432\u043B\u0435\u043D\u044B. \u0412\u044B\u0431\u0435\u0440\u0438 \u043D\u0443\u0436\u043D\u044B\u0439 \u0432\u044B\u0448\u0435.");
-    }) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u044D\u043A\u0441\u043F\u043E\u0440\u0442", onPress: () => void run(() => setJson(controller.exportProfiles())) }), /* @__PURE__ */ React2.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u044D\u043A\u0441\u043F\u043E\u0440\u0442", onPress: () => void run(async () => {
+    }) }), /* @__PURE__ */ React3.createElement(Button, { title: "\u041F\u043E\u043A\u0430\u0437\u0430\u0442\u044C \u044D\u043A\u0441\u043F\u043E\u0440\u0442", onPress: () => void run(() => setJson(controller.exportProfiles())) }), /* @__PURE__ */ React3.createElement(Button, { title: "\u041A\u043E\u043F\u0438\u0440\u043E\u0432\u0430\u0442\u044C \u044D\u043A\u0441\u043F\u043E\u0440\u0442", onPress: () => void run(async () => {
       const exported = controller.exportProfiles();
       setJson(exported);
       const clipboard = vendetta.metro.common.clipboard;
@@ -742,9 +864,9 @@
         persist({ ...data, restoreOnStart });
         update({ restoreOnStart });
       },
-      importProfiles(text) {
+      importProfiles(text2) {
         load();
-        const incoming = parseImport(text, data.profiles.map((profile) => profile.id));
+        const incoming = parseImport(text2, data.profiles.map((profile) => profile.id));
         if (data.profiles.length + incoming.length > MAX_PROFILES)
           throw new Error(`\u041F\u043E\u0441\u043B\u0435 \u0438\u043C\u043F\u043E\u0440\u0442\u0430 \u043F\u043E\u043B\u0443\u0447\u0438\u0442\u0441\u044F \u0431\u043E\u043B\u044C\u0448\u0435 ${MAX_PROFILES} \u043F\u0440\u043E\u0444\u0438\u043B\u0435\u0439. \u0423\u0434\u0430\u043B\u0438 \u043D\u0435\u043D\u0443\u0436\u043D\u044B\u0435 \u0438 \u043F\u043E\u0432\u0442\u043E\u0440\u0438 \u0438\u043C\u043F\u043E\u0440\u0442.`);
         persist({ ...data, profiles: [...data.profiles, ...incoming] });
@@ -1586,13 +1708,13 @@
   });
 
   // src/shared/lanCrypto.ts
-  function unhex(text, bytes) {
-    if (typeof text !== "string" || !/^(?:[0-9a-f]{2})+$/i.test(text) || bytes !== void 0 && text.length !== bytes * 2) throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0439 \u043A\u043B\u044E\u0447 \u0438\u043B\u0438 \u043F\u0430\u043A\u0435\u0442 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438.");
-    return Uint8Array.from(text.match(/../g), (x) => parseInt(x, 16));
+  function unhex(text2, bytes) {
+    if (typeof text2 !== "string" || !/^(?:[0-9a-f]{2})+$/i.test(text2) || bytes !== void 0 && text2.length !== bytes * 2) throw new Error("\u041D\u0435\u043A\u043E\u0440\u0440\u0435\u043A\u0442\u043D\u044B\u0439 \u043A\u043B\u044E\u0447 \u0438\u043B\u0438 \u043F\u0430\u043A\u0435\u0442 \u0441\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u0438.");
+    return Uint8Array.from(text2.match(/../g), (x) => parseInt(x, 16));
   }
   var hex = (value) => Array.from(value, (n) => n.toString(16).padStart(2, "0")).join("");
-  function encode(text) {
-    const escaped = encodeURIComponent(text), bytes = [];
+  function encode(text2) {
+    const escaped = encodeURIComponent(text2), bytes = [];
     for (let i = 0; i < escaped.length; i++) {
       if (escaped[i] === "%") {
         bytes.push(parseInt(escaped.slice(i + 1, i + 3), 16));
@@ -1718,8 +1840,8 @@
     let timer, busy = false, generation = 0;
     let status = "\u0421\u0438\u043D\u0445\u0440\u043E\u043D\u0438\u0437\u0430\u0446\u0438\u044F \u043F\u043E Wi-Fi \u043D\u0435 \u043F\u043E\u0434\u043A\u043B\u044E\u0447\u0435\u043D\u0430.";
     const listeners = /* @__PURE__ */ new Set();
-    const setStatus = (text) => {
-      status = text;
+    const setStatus = (text2) => {
+      status = text2;
       listeners.forEach((f) => f());
     };
     const owner = () => api.metro.findByProps("getCurrentUser")?.getCurrentUser?.()?.id ?? "";
@@ -1854,21 +1976,21 @@
     return descriptions.filter((d) => d.clickable).length >= 2 && groups.every((group) => descriptions.some((d) => [...d.labels].some((label) => group.has(label))));
   }
   function createProfileShortcut(api, renderSettings2) {
-    const { React: React3, ReactNative: RN3 } = api.metro.common;
+    const { React: React4, ReactNative: RN4 } = api.metro.common;
     let active = false, editing = false;
     const unpatch = [];
     const closeEditors = /* @__PURE__ */ new Set();
     function Shortcut() {
-      const [open2, setOpen] = React3.useState(false);
+      const [open2, setOpen] = React4.useState(false);
       const close = () => setOpen(false);
-      React3.useEffect(() => {
+      React4.useEffect(() => {
         closeEditors.add(close);
         return () => {
           closeEditors.delete(close);
         };
       }, []);
-      const button = React3.createElement(
-        RN3.Pressable,
+      const button = React4.createElement(
+        RN4.Pressable,
         {
           accessibilityRole: "button",
           accessibilityLabel: "Rich Presence Studio \u2014 \u043D\u0430\u0441\u0442\u0440\u043E\u0438\u0442\u044C \u0441\u0442\u0430\u0442\u0443\u0441",
@@ -1878,34 +2000,34 @@
           hitSlop: { top: 6, bottom: 6, left: 4, right: 4 },
           style: { minWidth: 56, height: 44, flex: 1, alignSelf: "flex-start", alignItems: "center", justifyContent: "flex-start", paddingHorizontal: 6 }
         },
-        React3.createElement(RN3.Text, { style: { color: "#aeb8ff", fontSize: 24, lineHeight: 24, height: 24, includeFontPadding: false, textAlign: "center" } }, "\u2726"),
-        React3.createElement(RN3.Text, { style: { color: "#eeeeee", fontSize: 12, lineHeight: 16, fontWeight: "600", includeFontPadding: false, marginTop: 4 } }, "RPS")
+        React4.createElement(RN4.Text, { style: { color: "#aeb8ff", fontSize: 24, lineHeight: 24, height: 24, includeFontPadding: false, textAlign: "center" } }, "\u2726"),
+        React4.createElement(RN4.Text, { style: { color: "#eeeeee", fontSize: 12, lineHeight: 16, fontWeight: "600", includeFontPadding: false, marginTop: 4 } }, "RPS")
       );
-      return React3.createElement(React3.Fragment, null, button, open2 && React3.createElement(RN3.Modal, {
+      return React4.createElement(React4.Fragment, null, button, open2 && React4.createElement(RN4.Modal, {
         visible: true,
         animationType: "slide",
         presentationStyle: "fullScreen",
         onRequestClose: close
-      }, React3.createElement(
-        RN3.SafeAreaView,
+      }, React4.createElement(
+        RN4.SafeAreaView,
         { style: {
           flex: 1,
           backgroundColor: "#17181d",
           // Core SafeAreaView only applies native safe-area padding on iOS.
           // Android 15 edge-to-edge also places modal content under the status bar.
-          paddingTop: RN3.Platform?.OS === "android" ? RN3.StatusBar?.currentHeight ?? 0 : 0
+          paddingTop: RN4.Platform?.OS === "android" ? RN4.StatusBar?.currentHeight ?? 0 : 0
         } },
-        React3.createElement(
-          RN3.View,
+        React4.createElement(
+          RN4.View,
           { style: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 16, minHeight: 56 } },
-          React3.createElement(RN3.Text, { style: { color: "#f3f4fa", fontSize: 18, fontWeight: "700", flex: 1 } }, "Rich Presence Studio"),
-          React3.createElement(
-            RN3.Pressable,
+          React4.createElement(RN4.Text, { style: { color: "#f3f4fa", fontSize: 18, fontWeight: "700", flex: 1 } }, "Rich Presence Studio"),
+          React4.createElement(
+            RN4.Pressable,
             { accessibilityRole: "button", accessibilityLabel: "\u0417\u0430\u043A\u0440\u044B\u0442\u044C \u043D\u0430\u0441\u0442\u0440\u043E\u0439\u043A\u0438 RPS", onPress: close, style: { padding: 12 } },
-            React3.createElement(RN3.Text, { style: { color: "#aeb8ff", fontSize: 16 } }, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C")
+            React4.createElement(RN4.Text, { style: { color: "#aeb8ff", fontSize: 16 } }, "\u0417\u0430\u043A\u0440\u044B\u0442\u044C")
           )
         ),
-        React3.createElement(renderSettings2)
+        React4.createElement(renderSettings2)
       )));
     }
     function inject(_args, element) {
@@ -1915,7 +2037,7 @@
         if (!isProfileActionRow(element)) return;
         recordMatch();
         editing = true;
-        return React3.cloneElement(element, {}, ...element.props.children, React3.createElement(Shortcut, { key: KEY }));
+        return React4.cloneElement(element, {}, ...element.props.children, React4.createElement(Shortcut, { key: KEY }));
       } catch (e) {
         api.logger?.error?.("RPS profile shortcut", e);
       } finally {
@@ -1929,7 +2051,7 @@
         try {
           const jsx = api.metro.findByProps("jsx", "jsxs");
           for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
-          if (typeof React3.createElement === "function") unpatch.push(api.patcher.after("createElement", React3, inject));
+          if (typeof React4.createElement === "function") unpatch.push(api.patcher.after("createElement", React4, inject));
           setHookCount(unpatch.length);
         } catch (e) {
           this.stop();
