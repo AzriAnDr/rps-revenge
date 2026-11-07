@@ -1,4 +1,4 @@
 {
-  "payload": "{\"version\":\"0.3.4\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.4/RichPresenceStudioSetup.exe\",\"size\":6361600,\"sha256\":\"861d196b5e8b351be9a0078f391742a5d576e1584004364ec062780d5e46825a\",\"notes\":\"Вкладки редактора без полосы прокрутки: компактные кнопки и перенос целых вкладок на второй ряд.\"}",
-  "signature": "yJdLsdfVAie+Lv9uVo93HQTxBNsYHVLAwVTuBcsdTcoX+7Y/uQTfrXjCfLsQGcuzBKa4hhOS/p5HpHTrYczlBQ=="
+  "payload": "{\"version\":\"0.3.6\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.6/RichPresenceStudioSetup.exe\",\"size\":30703616,\"sha256\":\"410d481322c4f8a1088ee580bf780fcf862cfabcb10d4a1419092f9de909c39d\",\"notes\":\"Исправлено зависание Discord на Starting. В комплекте Vencord 1.15.16. В лаунчере можно переключать режим Vencord и автоматически устанавливать подписанные обновления после выхода из Discord.\"}",
+  "signature": "94QKXdAa3iJX56HatYUBbwtE5xsR7gJScCYWM7YBvfzXXv6tJMR9I1pnXQhjSbyxoXb7e6OfdOIBE1SHkBrACQ=="
 }
