@@ -292,7 +292,7 @@
   }
 
   // src/diagnostics.ts
-  var BUILD = "0.2.9";
+  var BUILD = "0.2.10";
   var presence = "not-applied";
   function recordPresence(value) {
     presence = value;
@@ -300,10 +300,20 @@
   var components = /* @__PURE__ */ new Set();
   var hooks = 0;
   var matches = 0;
+  function componentNames(type) {
+    const names = [];
+    for (let depth = 0; type && depth < 5; depth++) {
+      for (const name of [type.displayName, type.name]) {
+        if (typeof name === "string" && name) names.push(name);
+      }
+      type = type.type ?? type.render;
+    }
+    return names;
+  }
   function observeComponent(element) {
-    const type = element?.type;
-    const name = type?.displayName || type?.name || type?.render?.name;
-    if (typeof name === "string" && /profile|quest|shop|setting|actionbar|floating/i.test(name) && components.size < 80) components.add(name.slice(0, 100));
+    for (const name of componentNames(element?.type)) {
+      if (/profile|quest|shop|setting|actionbar|floating/i.test(name) && components.size < 80) components.add(name.slice(0, 100));
+    }
   }
   function setHookCount(value) {
     hooks = value;
@@ -1955,14 +1965,15 @@
         return;
       }
       const type = value.type ?? value;
-      const typeName = type?.displayName || type?.name || type?.render?.name;
-      if (typeName === "QuestsIcon") labels.add("quests");
-      if (typeName === "ShopIcon" || typeName === "CollectiblesShopEntryButton") labels.add("shop");
-      if (typeName === "SettingsIcon") labels.add("settings");
+      for (const typeName of componentNames(type)) {
+        if (typeName === "QuestsIcon") labels.add("quests");
+        if (typeName === "ShopIcon" || typeName === "CollectiblesShopEntryButton") labels.add("shop");
+        if (typeName === "SettingsIcon") labels.add("settings");
+      }
       const p = value.props;
       if (!p) return;
       clickable || (clickable = typeof p.onPress === "function");
-      for (const name of ["label", "text", "title", "accessibilityLabel", "icon", "Icon", "children"]) visit(p[name], depth + 1);
+      for (const name of ["label", "text", "title", "accessibilityLabel", "icon", "Icon", "IconComponent", "children"]) visit(p[name], depth + 1);
     }
     visit(root, 0);
     return { labels, clickable };
@@ -1971,7 +1982,7 @@
     const children = element?.props?.children;
     if (!Array.isArray(children) || children.some((c) => c?.key === KEY)) return false;
     const visible = children.flat(2).filter((c) => c != null && c !== false);
-    if (visible.length !== 3) return false;
+    if (visible.length < 3 || visible.length > 5) return false;
     const descriptions = visible.map(describe);
     return descriptions.filter((d) => d.clickable).length >= 2 && groups.every((group) => descriptions.some((d) => [...d.labels].some((label) => group.has(label))));
   }
@@ -2044,14 +2055,36 @@
         editing = false;
       }
     }
+    function injectProfileTree(_args, root) {
+      if (!active) return;
+      let remaining = 160;
+      function visit(element, depth) {
+        if (--remaining < 0 || depth > 10 || !element) return element;
+        if (Array.isArray(element)) {
+          const children2 = element.map((child) => visit(child, depth + 1));
+          return children2.some((child, i) => child !== element[i]) ? children2 : element;
+        }
+        if (!element.props) return element;
+        if (Array.isArray(element.props.children) && element.props.children.some((child) => child?.key === KEY)) return element;
+        const enhanced = inject([], element);
+        if (enhanced) return enhanced;
+        const children = visit(element.props.children, depth + 1);
+        return children !== element.props.children ? React4.cloneElement(element, { children }) : element;
+      }
+      return visit(root, 0);
+    }
     return {
       start() {
         if (active || !api.patcher?.after) return;
         active = true;
         try {
-          const jsx = api.metro.findByProps("jsx", "jsxs");
-          for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
+          const runtimes = api.metro.findByPropsAll?.("jsx", "jsxs") ?? [api.metro.findByProps("jsx", "jsxs")];
+          for (const jsx of new Set(runtimes)) {
+            for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
+          }
           if (typeof React4.createElement === "function") unpatch.push(api.patcher.after("createElement", React4, inject));
+          const profile = api.metro.findByName?.("YouBannerDecorations", false);
+          if (typeof profile?.default === "function") unpatch.push(api.patcher.after("default", profile, injectProfileTree));
           setHookCount(unpatch.length);
         } catch (e) {
           this.stop();

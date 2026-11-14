@@ -22,9 +22,35 @@ test("matches observed Discord icons with hidden labels and a separate shop comp
     observed.props.children[1][1] = element("OtherButton", {});
     assert.equal(isProfileActionRow(observed), false);
 });
+
+test("recognizes profile icons inside nested memo and forwardRef wrappers", () => {
+    function QuestsIcon() {} function SettingsIcon() {} function CollectiblesShopEntryButton() {}
+    const memo = (type: any) => ({ $$typeof: Symbol.for("react.memo"), displayName: "Memo", type });
+    const forward = (render: any) => ({ $$typeof: Symbol.for("react.forward_ref"), render });
+    const observed = element("View", {},
+        element("Button", { onPress() {}, icon: memo(forward(QuestsIcon)) }),
+        element(memo(CollectiblesShopEntryButton), {}),
+        element("Button", { onPress() {} }, element(forward(memo(SettingsIcon)), {})));
+    assert.ok(isProfileActionRow(observed));
+    observed.props.children[2] = element("Button", { onPress() {}, icon: memo(function OtherIcon() {}) });
+    assert.equal(isProfileActionRow(observed), false);
+});
+
+test("353.11 IconComponent actions allow optional Conjure and Nitro buttons", () => {
+    function QuestsIcon() {} function SettingsIcon() {} function CollectiblesShopEntryButton() {}
+    const actions = [
+        element("YouScreenNavIcon", { IconComponent: QuestsIcon, onPress() {} }),
+        element(CollectiblesShopEntryButton, { navigateToShop() {} }),
+        element("YouScreenNavIcon", { IconComponent: SettingsIcon, onPress() {}, testID: "you_tab_settings_button" })
+    ];
+    for (const extra of [[], [element("ConjureYouScreenButton", {})], [element("ConjureYouScreenButton", {}), element("NitroButton", {})]]) {
+        assert.ok(isProfileActionRow(element("YouScreenNavIconMeasurer", {}, ...extra, ...actions)));
+    }
+    assert.equal(isProfileActionRow(element("View", {}, ...actions.slice(0, 2), element("OtherButton", { onPress() {} }))), false);
+});
 // Small state/effect harness: exercise the actual injected component and its
 // press/back/unload handlers without pretending to render a native Android UI.
-function fixture() {
+function fixture(modern = false) {
     const hooks: any[] = [], cleanups: any[] = []; let removed = 0, open = false, mounted = false;
     const React = {
         Fragment: "Fragment", createElement: element,
@@ -32,15 +58,19 @@ function fixture() {
         useState: () => [open, (value: boolean) => { open = value; }],
         useEffect: (effect: () => any) => { if (!mounted) { mounted = true; cleanups.push(effect()); } }
     };
+    const profile = { default() {} }, runtime = { jsx() {}, jsxs() {} }, otherRuntime = { jsx() {}, jsxs() {} };
     const api: any = {
         metro: {
             common: { React, ReactNative: { Pressable: "Pressable", Text: "Text", View: "View", SafeAreaView: "SafeAreaView", Modal: "Modal" } },
-            findByProps: (prop: string) => { assert.equal(prop, "jsx"); return { jsx() {}, jsxs() {} }; }
+            findByProps: (prop: string) => { assert.equal(prop, "jsx"); return runtime; },
+            ...(modern ? { findByPropsAll: () => [runtime, otherRuntime, runtime], findByName: (name: string, defaultExport: boolean) => {
+                assert.equal(name, "YouBannerDecorations"); assert.equal(defaultExport, false); return profile;
+            } } : {})
         },
         patcher: { after: (_method: string, _obj: any, cb: any) => { hooks.push(cb); return () => { removed++; }; } }
     };
     const render = () => null, shortcut = createProfileShortcut(api, render);
-    shortcut.start(); shortcut.start(); assert.equal(hooks.length, 3);
+    shortcut.start(); shortcut.start(); assert.equal(hooks.length, modern ? 6 : 3);
     const original = row(), enhanced = hooks[0]([], original);
     const component = enhanced.props.children[3].type;
     return { hooks, cleanups, shortcut, original, enhanced, component, render, removed: () => removed };
@@ -61,6 +91,20 @@ test("shortcut preserves actions and opens its own editor without a navigation r
     modal.props.onRequestClose();
     assert.equal(f.component().props.children[1], false);
     f.shortcut.stop(); assert.equal(f.removed(), 3);
+});
+
+test("profile render hook reaches cached JSX trees and all hooks are removed", () => {
+    const f = fixture(true);
+    const original = element("View", {}, element("View", {}, element("YouScreenNavIconMeasurer", {}, ...row().props.children)));
+    const enhanced = f.hooks[5]([], original);
+    const actions = enhanced.props.children[0].props.children[0].props.children;
+    assert.equal(actions.length, 4);
+    assert.equal(actions[3].key, "rps-profile-shortcut");
+    assert.equal(original.props.children[0].props.children[0].props.children.length, 3);
+    const again = f.hooks[5]([], enhanced);
+    assert.equal(again, enhanced);
+    f.shortcut.stop(); assert.equal(f.removed(), 6);
+    assert.equal(f.hooks[5]([], original), undefined);
 });
 
 test("close button and plugin unload dismiss editor; stale button cannot reopen it", () => {

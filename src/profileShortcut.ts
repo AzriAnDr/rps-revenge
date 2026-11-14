@@ -1,4 +1,4 @@
-import { observeComponent, recordMatch, setHookCount } from "./diagnostics";
+import { componentNames, observeComponent, recordMatch, setHookCount } from "./diagnostics";
 const KEY = "rps-profile-shortcut";
 const groups = [new Set(["quests", "задания"]), new Set(["shop", "магазин"]), new Set(["settings", "настройки"])];
 
@@ -11,14 +11,15 @@ function describe(root: any) {
         if (typeof value === "string") { labels.add(value.trim().toLowerCase()); return; }
         if (Array.isArray(value)) { value.forEach(v => visit(v, depth + 1)); return; }
         const type = value.type ?? value;
-        const typeName = type?.displayName || type?.name || type?.render?.name;
-        if (typeName === "QuestsIcon") labels.add("quests");
-        if (typeName === "ShopIcon" || typeName === "CollectiblesShopEntryButton") labels.add("shop");
-        if (typeName === "SettingsIcon") labels.add("settings");
+        for (const typeName of componentNames(type)) {
+            if (typeName === "QuestsIcon") labels.add("quests");
+            if (typeName === "ShopIcon" || typeName === "CollectiblesShopEntryButton") labels.add("shop");
+            if (typeName === "SettingsIcon") labels.add("settings");
+        }
         const p = value.props;
         if (!p) return;
         clickable ||= typeof p.onPress === "function";
-        for (const name of ["label", "text", "title", "accessibilityLabel", "icon", "Icon", "children"]) visit(p[name], depth + 1);
+        for (const name of ["label", "text", "title", "accessibilityLabel", "icon", "Icon", "IconComponent", "children"]) visit(p[name], depth + 1);
     }
     visit(root, 0);
     return { labels, clickable };
@@ -28,7 +29,8 @@ export function isProfileActionRow(element: any): boolean {
     const children = element?.props?.children;
     if (!Array.isArray(children) || children.some(c => c?.key === KEY)) return false;
     const visible = children.flat(2).filter(c => c != null && c !== false);
-    if (visible.length !== 3) return false;
+    // 353.11 can also include Conjure and Nitro in YouBannerDecorations.
+    if (visible.length < 3 || visible.length > 5) return false;
     const descriptions = visible.map(describe);
     return descriptions.filter(d => d.clickable).length >= 2 && groups.every(group => descriptions.some(d => [...d.labels].some(label => group.has(label))));
 }
@@ -80,14 +82,39 @@ export function createProfileShortcut(api: any, renderSettings: () => any) {
         } catch (e) { api.logger?.error?.("RPS profile shortcut", e); }
         finally { editing = false; }
     }
+    function injectProfileTree(_args: unknown[], root: any) {
+        if (!active) return;
+        let remaining = 160;
+        function visit(element: any, depth: number): any {
+            if (--remaining < 0 || depth > 10 || !element) return element;
+            if (Array.isArray(element)) {
+                const children = element.map(child => visit(child, depth + 1));
+                return children.some((child, i) => child !== element[i]) ? children : element;
+            }
+            if (!element.props) return element;
+            // A second JSX/component hook may see the already enhanced row.
+            if (Array.isArray(element.props.children) && element.props.children.some((child: any) => child?.key === KEY)) return element;
+            const enhanced = inject([], element);
+            if (enhanced) return enhanced;
+            const children = visit(element.props.children, depth + 1);
+            return children !== element.props.children ? React.cloneElement(element, { children }) : element;
+        }
+        return visit(root, 0);
+    }
     return {
         start() {
             if (active || !api.patcher?.after) return;
             active = true;
             try {
-                const jsx = api.metro.findByProps("jsx", "jsxs");
-                for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
+                const runtimes = api.metro.findByPropsAll?.("jsx", "jsxs") ?? [api.metro.findByProps("jsx", "jsxs")];
+                for (const jsx of new Set(runtimes)) {
+                    for (const method of ["jsx", "jsxs"]) if (typeof jsx?.[method] === "function") unpatch.push(api.patcher.after(method, jsx, inject));
+                }
                 if (typeof React.createElement === "function") unpatch.push(api.patcher.after("createElement", React, inject));
+                // The native profile can capture its JSX factories before plugins load.
+                // Patching this screen's rendered tree also reaches those cached factories.
+                const profile = api.metro.findByName?.("YouBannerDecorations", false);
+                if (typeof profile?.default === "function") unpatch.push(api.patcher.after("default", profile, injectProfileTree));
                 setHookCount(unpatch.length);
             } catch (e) { this.stop(); api.logger?.error?.("RPS profile shortcut unavailable", e); }
         },
