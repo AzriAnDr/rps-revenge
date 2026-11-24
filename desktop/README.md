@@ -9,3 +9,5 @@ The client verifies an Ed25519-signed manifest, pinned repository release URL, d
 Settings, user plugins, rollback journals and the installer's ownership hashes are retained through the existing installer engine. An update failure is recorded in `%USERPROFILE%/.rps-studio/update-error.txt`. Repair/removal remain available in the installer.
 
 Release assets include the installer and corresponding GPL source archive. The private release-signing key is not stored in this repository. `latest.json` signs its exact UTF-8 payload string. Publish release assets first, then publish the signed manifest. Never replace an existing release binary in place: increment the desktop version.
+
+Version 0.3.7 adds configurable game priority: above, between, or below the card and music. Combined with the existing card/music toggle, all six orders are supported. Legacy settings keep games last. The selected Playing card is excluded from external game detection; unavailable activities fall back automatically.

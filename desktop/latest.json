@@ -1,4 +1,4 @@
 {
-  "payload": "{\"version\":\"0.3.6\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.6/RichPresenceStudioSetup.exe\",\"size\":30703616,\"sha256\":\"410d481322c4f8a1088ee580bf780fcf862cfabcb10d4a1419092f9de909c39d\",\"notes\":\"Исправлено зависание Discord на Starting. В комплекте Vencord 1.15.16. В лаунчере можно переключать режим Vencord и автоматически устанавливать подписанные обновления после выхода из Discord.\"}",
-  "signature": "94QKXdAa3iJX56HatYUBbwtE5xsR7gJScCYWM7YBvfzXXv6tJMR9I1pnXQhjSbyxoXb7e6OfdOIBE1SHkBrACQ=="
+  "payload": "{\"version\":\"0.3.7\",\"url\":\"https://github.com/AzriAnDr/rps-revenge/releases/download/desktop-v0.3.7/RichPresenceStudioSetup.exe\",\"size\":30835200,\"sha256\":\"aa237095aa954f18a2f94f062d9c34c757f2410cb39de1d6f296d53e61a07a67\",\"notes\":\"Добавлен приоритет игр: выше карточки и музыки, между ними или ниже. Доступны все шесть порядков; после закрытия игры или паузы музыки выбирается следующая активность. Существующие настройки и сторонние плагины сохраняются.\"}",
+  "signature": "Ucr6I9E7IWcMq+KHhpckziBtSUBbkJjX/XyvNlrKEq8X1DyFxPe5/ejPfsHnNI486dgRak6Du3r9nmhFw22rBw=="
 }
